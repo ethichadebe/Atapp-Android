@@ -1,38 +1,85 @@
 package com.ethichadebe.atapp.Adapter;
 
+import android.content.Context;
+import android.graphics.drawable.Drawable;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
 import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.airbnb.lottie.LottieAnimationView;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.ethichadebe.atapp.Art;
-import com.ethichadebe.atapp.Fragments.ArtItemFragment;
+import com.ethichadebe.atapp.R;
+import com.jsibbold.zoomage.ZoomageView;
 
-import java.util.ArrayList;
-import java.util.List;
+public class ArtSliderAdapter extends RecyclerView.Adapter<ArtSliderAdapter.ViewHolder> {
+    private static final String TAG = "ArtSliderAdapter";
+    private Art[] images;
+    private Context context;
 
-public class ArtSliderAdapter extends FragmentPagerAdapter {
+    private ZoomageView ivArt;
+    private LottieAnimationView lavLoader;
 
-    private final List<Fragment> fragments = new ArrayList<>();
-
-    public void addFragment(List<Art> arts) {
-        for (Art art : arts) {
-            fragments.add(new ArtItemFragment());
-        }
-    }
-
-    public ArtSliderAdapter(@NonNull FragmentManager fm) {
-        super(fm);
+    public ArtSliderAdapter(Art[] images, Context context) {
+        this.images = images;
+        this.context = context;
     }
 
     @NonNull
     @Override
-    public Fragment getItem(int position) {
-        return fragments.get(position);
+    public ArtSliderAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.art_item, parent, false);
+
+        return new ViewHolder(view);
     }
 
     @Override
-    public int getCount() {
-        return fragments.size();
+    public void onBindViewHolder(@NonNull ArtSliderAdapter.ViewHolder holder, int position) {
+        Glide
+                .with(context)
+                .load(images[position].getImage())
+                .listener(new RequestListener<Drawable>() {
+                    @Override
+                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                        lavLoader.setVisibility(View.GONE);
+                        return false;
+                    }
+                })
+                .override(2000, 2000)
+                .into(ivArt)
+                .getSize((width, height) -> {
+                    //before you load image LOG height and width that u actually got?
+                    //Log.d(TAG, "onResourceReady: Image: " + art.getTitle() + " Height: " + height + " Width: " + width);
+                });
+
+
+    }
+
+    @Override
+    public int getItemCount() {
+        return images.length;
+    }
+
+    public class ViewHolder extends RecyclerView.ViewHolder {
+
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+
+            ivArt = itemView.findViewById(R.id.ivArt);
+            lavLoader = itemView.findViewById(R.id.lavLoader);
+        }
     }
 }

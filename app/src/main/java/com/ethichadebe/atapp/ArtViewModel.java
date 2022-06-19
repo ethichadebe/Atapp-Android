@@ -91,7 +91,7 @@ public class ArtViewModel extends AndroidViewModel {
             public void onFailure(Call<List<Art>> call, Throwable t) {
                 Log.d("APICall: error", t.getMessage());
                 art.postValue(null);
-                makeAPICall();
+                //makeAPICall();
 
             }
         });
