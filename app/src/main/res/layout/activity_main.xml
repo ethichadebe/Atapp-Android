@@ -14,13 +14,16 @@
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tlLayout"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="8dp"
             android:layout_centerHorizontal="true"
-            android:layout_margin="5dp"
+            android:layout_marginTop="30dp"
+            android:background="@drawable/tlback"
             app:tabGravity="center"
             app:tabIndicator="@drawable/dot"
             app:tabIndicatorAnimationMode="elastic"
             app:tabIndicatorGravity="stretch"
+            app:tabMaxWidth="8dp"
+            app:tabMinWidth="8dp"
             app:tabMode="fixed" />
 
         <androidx.viewpager2.widget.ViewPager2
@@ -49,6 +52,7 @@
             android:layout_marginEnd="10dp"
             android:layout_marginBottom="10dp"
             app:lottie_rawRes="@raw/arrow" />
+
 
         <TextView
             android:id="@+id/tvTitle"
@@ -80,7 +84,7 @@
             android:layout_above="@+id/tvSmartifyLink"
             android:layout_below="@id/tvArtist"
             android:layout_marginStart="10dp"
-            android:layout_marginTop="50dp"
+            android:layout_marginTop="60dp"
             android:layout_marginEnd="10dp"
             android:layout_marginBottom="50dp"
             android:fontFamily="@font/lilitaone_regular"

@@ -1,24 +1,12 @@
 package com.ethichadebe.atapp;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
-import androidx.lifecycle.ViewModelProvider;
-import androidx.viewpager.widget.ViewPager;
-import androidx.viewpager2.widget.CompositePageTransformer;
-import androidx.viewpager2.widget.MarginPageTransformer;
-import androidx.viewpager2.widget.ViewPager2;
-
-import android.animation.ArgbEvaluator;
-import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
@@ -26,22 +14,28 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.ImageView;
-import android.widget.RelativeLayout;
+import android.widget.TextSwitcher;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.viewpager2.widget.CompositePageTransformer;
+import androidx.viewpager2.widget.MarginPageTransformer;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.airbnb.lottie.LottieProperty;
 import com.airbnb.lottie.model.KeyPath;
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.DataSource;
-import com.bumptech.glide.load.engine.GlideException;
-import com.bumptech.glide.request.RequestListener;
-import com.bumptech.glide.request.target.Target;
+import com.airbnb.lottie.value.LottieFrameInfo;
+import com.airbnb.lottie.value.SimpleLottieValueCallback;
 import com.ethichadebe.atapp.Adapter.ArtSliderAdapter;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -99,12 +93,16 @@ public class MainActivity extends AppCompatActivity {
 
         artViewModel.getArt().observe(this, arts -> {
             if (arts != null) {
-                adapter = new ArtSliderAdapter(arts.toArray(new Art[0]), getApplicationContext());
+                adapter = new ArtSliderAdapter(arts.toArray(new Art[0]), getApplicationContext(), this);
                 view_pager.setClipToPadding(false);
                 view_pager.setClipChildren(false);
                 view_pager.setOffscreenPageLimit(3);
                 view_pager.getChildAt(0).setOverScrollMode(View.OVER_SCROLL_NEVER);
                 view_pager.setAdapter(adapter);
+
+                /*tsSlideText.setInAnimation(getApplicationContext(), android.R.anim.slide_in_left);
+                tsSlideText.setOutAnimation(getApplicationContext(), android.R.anim.slide_out_right);*/
+                setupDisplay(arts, 0);
 
                 CompositePageTransformer transformer = new CompositePageTransformer();
                 transformer.addTransformer(new MarginPageTransformer(8));
@@ -131,76 +129,10 @@ public class MainActivity extends AppCompatActivity {
                 @SuppressLint("Recycle")
                 @Override
                 public void onPageSelected(int position) {
+
                     if ((prevPosition != position)) {
-                        //Set Muted Transition
-                        ColorDrawable[] backgroundDrawables = new ColorDrawable[2];
-                        ValueAnimator foregroundValueAnimator= ValueAnimator.ofObject(new ArgbEvaluator(),
-                                Color.rgb(extractColors(arts.get(Math.round(prevPosition)).getMuted())[0],
-                                        extractColors(arts.get(Math.round(prevPosition)).getMuted())[1],
-                                        extractColors(arts.get(Math.round(prevPosition)).getMuted())[2]),
-                                Color.rgb(extractColors(arts.get(Math.round(position)).getMuted())[0],
-                                        extractColors(arts.get(Math.round(position)).getMuted())[1],
-                                        extractColors(arts.get(Math.round(position)).getMuted())[2]));;
-                        int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-                        switch (currentNightMode) {
-                            case Configuration.UI_MODE_NIGHT_NO:
-                                // Night mode is not active, we're in day time
-                                backgroundDrawables[0] = new ColorDrawable(Color.rgb(extractColors(arts.get(Math.round(prevPosition)).getVibrant())[0],
-                                        extractColors(arts.get(Math.round(prevPosition)).getVibrant())[1],
-                                        extractColors(arts.get(Math.round(prevPosition)).getVibrant())[2]));
-                                backgroundDrawables[1] = new ColorDrawable(Color.rgb(extractColors(arts.get(Math.round(position)).getVibrant())[0],
-                                        extractColors(arts.get(Math.round(position)).getVibrant())[1],
-                                        extractColors(arts.get(Math.round(position)).getVibrant())[2]));
 
-                                foregroundValueAnimator = ValueAnimator.ofObject(new ArgbEvaluator(),
-                                        Color.rgb(extractColors(arts.get(Math.round(prevPosition)).getMuted())[0],
-                                                extractColors(arts.get(Math.round(prevPosition)).getMuted())[1],
-                                                extractColors(arts.get(Math.round(prevPosition)).getMuted())[2]), Color.rgb(extractColors(arts.get(Math.round(position)).getMuted())[0],
-                                                extractColors(arts.get(Math.round(position)).getMuted())[1],
-                                                extractColors(arts.get(Math.round(position)).getMuted())[2]));
-                                break;
-                            case Configuration.UI_MODE_NIGHT_YES:
-                            case Configuration.UI_MODE_NIGHT_UNDEFINED:
-                                // Night mode is active, we're at night!
-                                backgroundDrawables[0] = new ColorDrawable(Color.rgb(extractColors(arts.get(Math.round(prevPosition)).getMuted())[0],
-                                        extractColors(arts.get(Math.round(prevPosition)).getMuted())[1],
-                                        extractColors(arts.get(Math.round(prevPosition)).getMuted())[2]));
-                                backgroundDrawables[1] = new ColorDrawable(Color.rgb(extractColors(arts.get(Math.round(position)).getMuted())[0],
-                                        extractColors(arts.get(Math.round(position)).getMuted())[1],
-                                        extractColors(arts.get(Math.round(position)).getMuted())[2]));
-
-                                foregroundValueAnimator = ValueAnimator.ofObject(new ArgbEvaluator(),
-                                        Color.rgb(extractColors(arts.get(Math.round(prevPosition)).getVibrant())[0],
-                                                extractColors(arts.get(Math.round(prevPosition)).getVibrant())[1],
-                                                extractColors(arts.get(Math.round(prevPosition)).getVibrant())[2]),
-                                        Color.rgb(extractColors(arts.get(Math.round(position)).getVibrant())[0],
-                                                extractColors(arts.get(Math.round(position)).getVibrant())[1],
-                                                extractColors(arts.get(Math.round(position)).getVibrant())[2]));
-                                break;
-                        }
-                        TransitionDrawable backgroundTransition = new TransitionDrawable(backgroundDrawables);
-                        TransitionDrawable backgroundTransition1 = new TransitionDrawable(backgroundDrawables);
-                        bottomSheet.setBackground(backgroundTransition);
-                        clFirstBackground.setBackground(backgroundTransition1);
-
-                        foregroundValueAnimator.addUpdateListener(valueAnimator -> {
-                            tvTitle.setTextColor((Integer) valueAnimator.getAnimatedValue());
-                            tvArtist.setTextColor((Integer) valueAnimator.getAnimatedValue());
-                            tvDescription.setTextColor((Integer) valueAnimator.getAnimatedValue());
-                            tvSmartifyLink.setTextColor((Integer) valueAnimator.getAnimatedValue());
-                        });
-
-
-                        tvTitle.setText(arts.get(Math.round(position)).getTitle());
-                        tvArtist.setText(arts.get(Math.round(position)).getArtist());
-                        tvDescription.setText(arts.get(Math.round(position)).getDescription());
-                        tvSmartifyLink.setText("Read more on SMARTIFY..org");
-
-
-                        backgroundTransition.startTransition(1000);
-                        backgroundTransition1.startTransition(1000);
-                        foregroundValueAnimator.setDuration(1000);
-
+                        setupDisplay(arts, position);
                         prevPosition = position;
                     }
 
@@ -234,6 +166,66 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private void setupDisplay(List<Art> arts, int position){
+        int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        switch (currentNightMode) {
+            case Configuration.UI_MODE_NIGHT_NO:
+                // Night mode is not active, we're in day time
+                setForeGround(arts.get(position), arts.get(position).getMuted());
+                setBackground(arts.get(prevPosition).getVibrant(), arts.get(position).getVibrant());
+
+                break;
+            case Configuration.UI_MODE_NIGHT_YES:
+            case Configuration.UI_MODE_NIGHT_UNDEFINED:
+                // Night mode is active, we're at night!
+                setForeGround(arts.get(position), arts.get(position).getVibrant());
+                setBackground(arts.get(prevPosition).getMuted(), arts.get(position).getMuted());
+                break;
+        }
+    }
+
+    private void setForeGround(Art art, String strColor) {
+        int color = Color.rgb(extractColors(strColor)[0],
+                extractColors(strColor)[1],
+                extractColors(strColor)[2]);
+
+        tvTitle.setTextColor(color);
+        tvArtist.setTextColor(color);
+        tvDescription.setTextColor(color);
+        tvSmartifyLink.setTextColor(color);
+        animationView.addValueCallback(
+                new KeyPath("**"),
+                LottieProperty.COLOR_FILTER,
+                new SimpleLottieValueCallback<ColorFilter>() {
+                    @Override
+                    public ColorFilter getValue(LottieFrameInfo<ColorFilter> frameInfo) {
+                        return new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_ATOP);
+                    }
+                }
+        );
+        tlLayout.setSelectedTabIndicatorColor(color);
+
+        tvTitle.setText(art.getTitle());
+        tvArtist.setText(art.getArtist());
+        tvDescription.setText(art.getDescription());
+        tvSmartifyLink.setText("Read more on SMARTIFY..org");
+    }
+
+    private void setBackground(String prevColor, String color) {
+        ColorDrawable[] backgroundDrawables = new ColorDrawable[2];
+
+        backgroundDrawables[0] = new ColorDrawable(Color.rgb(extractColors(prevColor)[0], extractColors(prevColor)[1], extractColors(prevColor)[2]));
+        backgroundDrawables[1] = new ColorDrawable(Color.rgb(extractColors(color)[0], extractColors(color)[1], extractColors(color)[2]));
+
+        TransitionDrawable backgroundTransition = new TransitionDrawable(backgroundDrawables);
+        TransitionDrawable backgroundTransition1 = new TransitionDrawable(backgroundDrawables);
+
+        bottomSheet.setBackground(backgroundTransition);
+        clFirstBackground.setBackground(backgroundTransition1);
+
+        backgroundTransition.startTransition(1000);
+        backgroundTransition1.startTransition(1000);
+    }
 
     private int[] extractColors(String rgb) {
         int[] colorRGB = new int[3];
@@ -247,16 +239,14 @@ public class MainActivity extends AppCompatActivity {
         return colorRGB;
     }
 
-
-    private int dpToPx(int dp) {
-        float density = getApplicationContext().getResources().getDisplayMetrics().density;
-        return Math.round((float) dp * density);
-    }
-
     @Override
     public void onBackPressed() {
+        if (mBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
+            mBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        } else {
+            finishAffinity();
+        }
 
-        finishAffinity();
     }
 }
 
