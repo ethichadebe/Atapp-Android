@@ -17,7 +17,7 @@ public class InsertArtAsyncTask extends AsyncTask<Art, Void, Void> {
     @Override
     protected Void doInBackground(Art... arts) {
         artDao.insert(arts[0]);
-        Log.d(TAG, "doInBackground: " + arts[0].getTitle());
+        Log.d(TAG, "doInBackground: Inserted item " + arts[0].getTitle());
         return null;
     }
 }

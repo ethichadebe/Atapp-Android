@@ -1,4 +1,4 @@
-package com.ethichadebe.atapp;
+package com.ethichadebe.atapp.ViewModel;
 
 import android.app.Application;
 import android.util.Log;
@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
 
+import com.ethichadebe.atapp.Art;
 import com.ethichadebe.atapp.Network.APIService;
 import com.ethichadebe.atapp.Network.RetrofitInstance;
 import com.ethichadebe.atapp.Repository.ArtRepo;
@@ -22,17 +23,18 @@ public class ArtViewModel extends AndroidViewModel {
     private static final String TAG = "ArtViewModel";
     private ArtRepo repo;
     private LiveData<List<Art>> artLiveData;
+    private LiveData<List<Art>> imagesLiveData;
     private MediatorLiveData<List<Art>> art;
 
     private final APIService apiService = RetrofitInstance.getRetrofitClient().create(APIService.class);
     private final Call<List<Art>> call = apiService.getArt();
-
 
     public ArtViewModel(@NonNull Application application) {
         super(application);
 
         repo = new ArtRepo(application);
         artLiveData = repo.getArt();
+        imagesLiveData = repo.getImages();
         art = new MediatorLiveData<>();
     }
 
@@ -52,8 +54,12 @@ public class ArtViewModel extends AndroidViewModel {
     /**
      * remove art piece from local room database
      */
-    public void delete() {
-        repo.delete();
+    public void delete(Art art) {
+        repo.delete(art);
+    }
+
+    public boolean moreArtNeeded(){
+        return repo.moreArtNeeded();
     }
 
     /**
@@ -62,14 +68,13 @@ public class ArtViewModel extends AndroidViewModel {
     public void makeAPICall() {
         call.enqueue(new Callback<List<Art>>() {
             @Override
-            public void onResponse(Call<List<Art>> call, Response<List<Art>> response) {
+            public void onResponse(@NonNull Call<List<Art>> call, @NonNull Response<List<Art>> response) {
                 if (!response.isSuccessful()) {
                     Log.d("APICall: response error", String.valueOf(response.code()));
 
                 }
                 Log.d(TAG, "onResponse: " + response.body());
                 List<Art> arts = response.body();
-                delete();
 
                 //Populate database
                 assert arts != null;
@@ -88,10 +93,10 @@ public class ArtViewModel extends AndroidViewModel {
             }
 
             @Override
-            public void onFailure(Call<List<Art>> call, Throwable t) {
+            public void onFailure(@NonNull Call<List<Art>> call, @NonNull Throwable t) {
                 Log.d("APICall: error", t.getMessage());
                 art.postValue(null);
-                //makeAPICall();
+              //  makeAPICall(context, ivArt);
 
             }
         });
@@ -103,6 +108,10 @@ public class ArtViewModel extends AndroidViewModel {
 
     public LiveData<List<Art>> getArt() {
         return artLiveData;
+    }
+
+    public LiveData<List<Art>> getImages() {
+        return imagesLiveData;
     }
 }
 

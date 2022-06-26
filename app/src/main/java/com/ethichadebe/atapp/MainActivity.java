@@ -3,21 +3,23 @@ package com.ethichadebe.atapp;
 import android.annotation.SuppressLint;
 import android.content.res.Configuration;
 import android.graphics.Color;
-import android.graphics.ColorFilter;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.method.ScrollingMovementMethod;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.TextSwitcher;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.lifecycle.ViewModelProvider;
@@ -28,9 +30,13 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.airbnb.lottie.LottieAnimationView;
 import com.airbnb.lottie.LottieProperty;
 import com.airbnb.lottie.model.KeyPath;
-import com.airbnb.lottie.value.LottieFrameInfo;
-import com.airbnb.lottie.value.SimpleLottieValueCallback;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.ethichadebe.atapp.Adapter.ArtSliderAdapter;
+import com.ethichadebe.atapp.ViewModel.ArtViewModel;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
@@ -48,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
     private ViewPager2 view_pager;
     private ArtSliderAdapter adapter;
 
+    private ImageView imgGlide;
     private ArtViewModel artViewModel;
     private BottomSheetBehavior mBehavior;
     private View bottomSheet;
@@ -72,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
         tlLayout = findViewById(R.id.tlLayout);
         view_pager = findViewById(R.id.view_pager);
 
+        imgGlide = findViewById(R.id.ivImg);
 
         tvArtist = findViewById(R.id.tvArtist);
         tvTitle = findViewById(R.id.tvTitle);
@@ -100,8 +108,6 @@ public class MainActivity extends AppCompatActivity {
                 view_pager.getChildAt(0).setOverScrollMode(View.OVER_SCROLL_NEVER);
                 view_pager.setAdapter(adapter);
 
-                /*tsSlideText.setInAnimation(getApplicationContext(), android.R.anim.slide_in_left);
-                tsSlideText.setOutAnimation(getApplicationContext(), android.R.anim.slide_out_right);*/
                 setupDisplay(arts, 0);
 
                 CompositePageTransformer transformer = new CompositePageTransformer();
@@ -115,11 +121,8 @@ public class MainActivity extends AppCompatActivity {
                 view_pager.setPageTransformer(transformer);
             }
 
-            TabLayoutMediator tabLayoutMediator = new TabLayoutMediator(tlLayout, view_pager, true, new TabLayoutMediator.TabConfigurationStrategy() {
-                @Override
-                public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
+            TabLayoutMediator tabLayoutMediator = new TabLayoutMediator(tlLayout, view_pager, true, (tab, position) -> {
 
-                }
             });
 
             tabLayoutMediator.attach();
@@ -132,6 +135,7 @@ public class MainActivity extends AppCompatActivity {
 
                     if ((prevPosition != position)) {
 
+                        assert arts != null;
                         setupDisplay(arts, position);
                         prevPosition = position;
                     }
@@ -164,27 +168,67 @@ public class MainActivity extends AppCompatActivity {
             });
         });
 
+        artViewModel.getImages().observe(this, arts -> {
+            if (arts.size() > 0) {
+                preLoadImages(arts);
+            }
+        });
+
     }
 
-    private void setupDisplay(List<Art> arts, int position){
+    private void preLoadImages(List<Art> arts) {
+        Art art = arts.remove(0);
+        Handler h = new Handler();
+
+        h.postDelayed(() -> {
+            Glide
+                    .with(getApplicationContext())
+                    .load(art.getImage())
+                    .listener(new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                            arts.add(art);
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                            return false;
+                        }
+                    })
+                    .override(2000, 2000)
+                    .into(imgGlide);
+
+            preLoadImages(arts);
+        }, 10000);
+
+    }
+
+    private void setupDisplay(List<Art> arts, int position) {
+        Art art = arts.get(position);
+
+        Log.d(TAG, "setupDisplay: Art info:\nTitle: " + art.getTitle() + "\nArtist: " + art.getArtist() + "\nDescription: " + art.getDescription() +
+                "\nImage: " + art.getImage() + "\nVibrant color: " + art.getVibrant() + "\nMuted color: " + art.getMuted());
         int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
         switch (currentNightMode) {
             case Configuration.UI_MODE_NIGHT_NO:
                 // Night mode is not active, we're in day time
-                setForeGround(arts.get(position), arts.get(position).getMuted());
-                setBackground(arts.get(prevPosition).getVibrant(), arts.get(position).getVibrant());
+                setForeGround(art, art.getMuted());
+                setBackground(arts.get(prevPosition).getVibrant(), art.getVibrant());
 
                 break;
             case Configuration.UI_MODE_NIGHT_YES:
             case Configuration.UI_MODE_NIGHT_UNDEFINED:
                 // Night mode is active, we're at night!
-                setForeGround(arts.get(position), arts.get(position).getVibrant());
-                setBackground(arts.get(prevPosition).getMuted(), arts.get(position).getMuted());
+                setForeGround(art, art.getVibrant());
+                setBackground(arts.get(prevPosition).getMuted(), art.getMuted());
                 break;
         }
+
+        //adapter.reDisplayItem(position);
     }
 
-    private void setForeGround(Art art, String strColor) {
+    private void setForeGround(@NonNull Art art, String strColor) {
         int color = Color.rgb(extractColors(strColor)[0],
                 extractColors(strColor)[1],
                 extractColors(strColor)[2]);
@@ -196,12 +240,7 @@ public class MainActivity extends AppCompatActivity {
         animationView.addValueCallback(
                 new KeyPath("**"),
                 LottieProperty.COLOR_FILTER,
-                new SimpleLottieValueCallback<ColorFilter>() {
-                    @Override
-                    public ColorFilter getValue(LottieFrameInfo<ColorFilter> frameInfo) {
-                        return new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_ATOP);
-                    }
-                }
+                frameInfo -> new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_ATOP)
         );
         tlLayout.setSelectedTabIndicatorColor(color);
 

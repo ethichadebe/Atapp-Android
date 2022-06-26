@@ -10,7 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.ethichadebe.atapp.Art;
 
-@Database(entities = Art.class, version = 3)
+@Database(entities = Art.class, version = 11)
 public abstract class ArtDatabase extends RoomDatabase {
 
     private static ArtDatabase instance;
@@ -20,6 +20,7 @@ public abstract class ArtDatabase extends RoomDatabase {
     public static synchronized ArtDatabase getInstance(Context context) {
         if (instance == null) {
             instance = Room.databaseBuilder(context.getApplicationContext(), ArtDatabase.class, "art_gallery")
+                    .allowMainThreadQueries()
                     .fallbackToDestructiveMigration()
                     .addCallback(roomCallback).build();
         }

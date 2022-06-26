@@ -6,8 +6,9 @@ import androidx.room.PrimaryKey;
 
 @Entity(tableName = "art_gallery")
 public class Art {
-    @PrimaryKey
+    @PrimaryKey(autoGenerate = true)
     @NonNull
+    private int artId;
     private String link;
     private String random_word;
     private String image;
@@ -19,7 +20,7 @@ public class Art {
     private String muted;
     private String used;
 
-    public Art(String link, String random_word, String image, String title, String size, String artist, String description, String vibrant, String muted, String used) {
+    public Art(@NonNull String link, String random_word, String image, String title, String size, String artist, String description, String vibrant, String muted, String used) {
         this.link = link;
         this.random_word = random_word;
         this.image = image;
@@ -70,5 +71,13 @@ public class Art {
 
     public String getUsed() {
         return used;
+    }
+
+    public int getArtId() {
+        return artId;
+    }
+
+    public void setArtId(int artId) {
+        this.artId = artId;
     }
 }

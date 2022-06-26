@@ -5,21 +5,27 @@
     android:id="@+id/rlBody"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
-    android:gravity="center">
+    android:background="@color/white">
 
+    <ImageView
+        android:id="@+id/ivMyLogo"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="20dp" />
 
     <ImageView
         android:id="@+id/ivBackground"
         android:layout_width="300dp"
         android:layout_height="360dp"
-        android:layout_centerHorizontal="true"
+        android:layout_centerInParent="true"
         android:background="@drawable/round_corners" />
 
     <RelativeLayout
         android:layout_width="300dp"
         android:layout_height="400dp"
-        android:layout_centerHorizontal="true">
+        android:layout_centerInParent="true">
 
         <com.airbnb.lottie.LottieAnimationView
             android:id="@+id/lavLoader"
@@ -90,6 +96,5 @@
                 android:textSize="48sp" />
         </LinearLayout>
     </RelativeLayout>
-
 
 </RelativeLayout>

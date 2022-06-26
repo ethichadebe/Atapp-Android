@@ -3,6 +3,7 @@ package com.ethichadebe.atapp.Adapter;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,7 +25,8 @@ import com.ethichadebe.atapp.R;
 
 public class ArtSliderAdapter extends RecyclerView.Adapter<ArtSliderAdapter.ViewHolder> {
     private static final String TAG = "ArtSliderAdapter";
-    private Art[] images;
+    
+    private Art[] images;                               //Images to be displayed
     private Context context;
     private Activity activity;
 
@@ -47,7 +49,8 @@ public class ArtSliderAdapter extends RecyclerView.Adapter<ArtSliderAdapter.View
 
     @Override
     public void onBindViewHolder(@NonNull ArtSliderAdapter.ViewHolder holder, int position) {
-        Glide
+        //Display images
+        Glide           
                 .with(context)
                 .load(images[position].getImage())
                 .listener(new RequestListener<Drawable>() {
@@ -58,6 +61,8 @@ public class ArtSliderAdapter extends RecyclerView.Adapter<ArtSliderAdapter.View
 
                     @Override
                     public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                        //Log.d(TAG, "onResourceReady: " + images[position].getTitle()+"'s image has been rendered");
+                        //Remove loading animation
                         lavLoader.setVisibility(View.GONE);
                         return false;
                     }
@@ -65,6 +70,7 @@ public class ArtSliderAdapter extends RecyclerView.Adapter<ArtSliderAdapter.View
                 .override(2000, 2000)
                 .into(ivArt);
 
+        //Zoom functionality
         Zoomy.Builder builder = new Zoomy.Builder(activity).target(ivArt);
         builder.register();
 
