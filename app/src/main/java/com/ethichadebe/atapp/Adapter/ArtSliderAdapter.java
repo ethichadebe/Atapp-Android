@@ -50,23 +50,10 @@ public class ArtSliderAdapter extends RecyclerView.Adapter<ArtSliderAdapter.View
     @Override
     public void onBindViewHolder(@NonNull ArtSliderAdapter.ViewHolder holder, int position) {
         //Display images
+        ivArt.setContentDescription(images[position].getDescription());
         Glide           
                 .with(context)
                 .load(images[position].getImage())
-                .listener(new RequestListener<Drawable>() {
-                    @Override
-                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                        //Log.d(TAG, "onResourceReady: " + images[position].getTitle()+"'s image has been rendered");
-                        //Remove loading animation
-                        lavLoader.setVisibility(View.GONE);
-                        return false;
-                    }
-                })
                 .override(2000, 2000)
                 .into(ivArt);
 

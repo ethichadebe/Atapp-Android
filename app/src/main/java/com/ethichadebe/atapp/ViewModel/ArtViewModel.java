@@ -1,54 +1,51 @@
 package com.ethichadebe.atapp.ViewModel;
 
 import android.app.Application;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
+import androidx.lifecycle.Observer;
 
 import com.ethichadebe.atapp.Art;
-import com.ethichadebe.atapp.Network.APIService;
-import com.ethichadebe.atapp.Network.RetrofitInstance;
+import com.ethichadebe.atapp.Network.ApiResponse;
 import com.ethichadebe.atapp.Repository.ArtRepo;
 
 import java.util.List;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
 public class ArtViewModel extends AndroidViewModel {
     private static final String TAG = "ArtViewModel";
-    private ArtRepo repo;
-    private LiveData<List<Art>> artLiveData;
-    private LiveData<List<Art>> imagesLiveData;
-    private MediatorLiveData<List<Art>> art;
 
-    private final APIService apiService = RetrofitInstance.getRetrofitClient().create(APIService.class);
-    private final Call<List<Art>> call = apiService.getArt();
+    private ArtRepo repo;
+    private MediatorLiveData<ApiResponse> mApiResponse;
 
     public ArtViewModel(@NonNull Application application) {
         super(application);
-
+        mApiResponse = new MediatorLiveData<>();
         repo = new ArtRepo(application);
-        artLiveData = repo.getArt();
-        imagesLiveData = repo.getImages();
-        art = new MediatorLiveData<>();
     }
 
-    public MediatorLiveData<List<Art>> getArtObserver() {
-        return art;
+    public LiveData<ApiResponse> getRemoteData() {
+        mApiResponse.addSource(repo.makeAPICall(), new Observer<ApiResponse>() {
+            @Override
+            public void onChanged(ApiResponse apiResponse) {
+                mApiResponse.setValue(apiResponse);
+            }
+        });
+        return mApiResponse;
     }
 
-    /**
-     * Insert art piece to local room database
-     *
-     * @param art retried from the remote database
-     */
-    public void insert(Art art) {
-        repo.insert(art);
+    public LiveData<List<Art>> getLocalData() {
+        return repo.getArt();
+    }
+
+    public List<Art> getArtToDelete() {
+        return repo.getArtToDelete();
+    }
+
+    public LiveData<List<Art>> getPreloadImages() {
+        return repo.preloadImages();
     }
 
     /**
@@ -58,62 +55,7 @@ public class ArtViewModel extends AndroidViewModel {
         repo.delete(art);
     }
 
-    public boolean moreArtNeeded(){
+    public boolean moreArtNeeded() {
         return repo.moreArtNeeded();
     }
-
-    /**
-     * get art piece from the remote database
-     */
-    public void makeAPICall() {
-        call.enqueue(new Callback<List<Art>>() {
-            @Override
-            public void onResponse(@NonNull Call<List<Art>> call, @NonNull Response<List<Art>> response) {
-                if (!response.isSuccessful()) {
-                    Log.d("APICall: response error", String.valueOf(response.code()));
-
-                }
-                Log.d(TAG, "onResponse: " + response.body());
-                List<Art> arts = response.body();
-
-                //Populate database
-                assert arts != null;
-                for (Art art: arts){
-                    insert(art);
-                }
-
-                Log.d("APICall: Random Word", arts.get(0).getRandom_word());
-                Log.d("APICall: Title", arts.get(0).getTitle());
-                Log.d("APICall: Artist", arts.get(0).getArtist());
-                Log.d("APICall: Description", arts.get(0).getDescription());
-                Log.d("APICall: Image", arts.get(0).getImage());
-                Log.d("APICall: Vibrant colour", arts.get(0).getVibrant());
-                Log.d("APICall: Muted colours", arts.get(0).getMuted());
-
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<List<Art>> call, @NonNull Throwable t) {
-                Log.d("APICall: error", t.getMessage());
-                art.postValue(null);
-              //  makeAPICall(context, ivArt);
-
-            }
-        });
-    }
-
-    public void cancelCall() {
-        call.cancel();
-    }
-
-    public LiveData<List<Art>> getArt() {
-        return artLiveData;
-    }
-
-    public LiveData<List<Art>> getImages() {
-        return imagesLiveData;
-    }
 }
-
-
-

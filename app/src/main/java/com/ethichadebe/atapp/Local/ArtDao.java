@@ -42,6 +42,13 @@ public interface ArtDao {
     @Query("SELECT * FROM art_gallery LIMIT 10")
     LiveData<List<Art>> getArtPiece();
 
+    /**
+     *
+     * @return 10 art items
+     */
+    @Query("SELECT * FROM art_gallery LIMIT 10")
+    List<Art> artToDelete();
+
     @Query("SELECT * FROM art_gallery")
-    LiveData<List<Art>> getImages();
+    LiveData<List<Art>> getPreloadImages();
 }

@@ -1,6 +1,7 @@
 package com.ethichadebe.atapp;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
@@ -22,7 +23,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.CompositePageTransformer;
 import androidx.viewpager2.widget.MarginPageTransformer;
 import androidx.viewpager2.widget.ViewPager2;
@@ -48,13 +51,12 @@ public class MainActivity extends AppCompatActivity {
 
     private CoordinatorLayout clFirstBackground;
 
-    private LottieAnimationView animationView;
+    private LottieAnimationView animationView, lavLoader;
 
     private TabLayout tlLayout;
     private ViewPager2 view_pager;
     private ArtSliderAdapter adapter;
 
-    private ImageView imgGlide;
     private ArtViewModel artViewModel;
     private BottomSheetBehavior mBehavior;
     private View bottomSheet;
@@ -79,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
         tlLayout = findViewById(R.id.tlLayout);
         view_pager = findViewById(R.id.view_pager);
 
-        imgGlide = findViewById(R.id.ivImg);
+
 
         tvArtist = findViewById(R.id.tvArtist);
         tvTitle = findViewById(R.id.tvTitle);
@@ -89,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
         tvDescription.setMovementMethod(new ScrollingMovementMethod());
         bottomSheet = findViewById(R.id.rlBottomSheet);
 
+        lavLoader = findViewById(R.id.lavLoader);
         animationView = findViewById(R.id.animationView);
         animationView.setMinAndMaxProgress(0.0f, 0.5f);
 
@@ -99,112 +102,55 @@ public class MainActivity extends AppCompatActivity {
 
         artViewModel = new ViewModelProvider(this).get(ArtViewModel.class);
 
-        artViewModel.getArt().observe(this, arts -> {
-            if (arts != null) {
-                adapter = new ArtSliderAdapter(arts.toArray(new Art[0]), getApplicationContext(), this);
-                view_pager.setClipToPadding(false);
-                view_pager.setClipChildren(false);
-                view_pager.setOffscreenPageLimit(3);
-                view_pager.getChildAt(0).setOverScrollMode(View.OVER_SCROLL_NEVER);
-                view_pager.setAdapter(adapter);
+        artViewModel.getLocalData().observe(this, new Observer<List<Art>>() {
+            @Override
+            public void onChanged(List<Art> arts) {
 
-                setupDisplay(arts, 0);
+                if (arts!=null){
+                    adapter = new ArtSliderAdapter(arts.toArray(new Art[0]),MainActivity.this,MainActivity.this);
+                    view_pager.setAdapter(adapter);
+                    view_pager.setOffscreenPageLimit(10);
+                    view_pager.setClipChildren(false);
+                    view_pager.setClipToPadding(false);
 
-                CompositePageTransformer transformer = new CompositePageTransformer();
-                transformer.addTransformer(new MarginPageTransformer(8));
-                transformer.addTransformer((page, position) -> {
-                    float v = 1 - Math.abs(position);
-                    page.setScaleY(0.8f + v * 0.2f);
-                    Log.d(TAG, "transformPage: " + position);
+                    view_pager.getChildAt(0).setOverScrollMode(RecyclerView.OVER_SCROLL_NEVER);
 
-                });
-                view_pager.setPageTransformer(transformer);
-            }
-
-            TabLayoutMediator tabLayoutMediator = new TabLayoutMediator(tlLayout, view_pager, true, (tab, position) -> {
-
-            });
-
-            tabLayoutMediator.attach();
-
-
-            view_pager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
-                @SuppressLint("Recycle")
-                @Override
-                public void onPageSelected(int position) {
-
-                    if ((prevPosition != position)) {
-
-                        assert arts != null;
-                        setupDisplay(arts, position);
-                        prevPosition = position;
-                    }
-
-                    mBehavior.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+                    CompositePageTransformer transformer = new CompositePageTransformer();
+                    transformer.addTransformer(new MarginPageTransformer(40));
+                    transformer.addTransformer(new ViewPager2.PageTransformer() {
                         @Override
-                        public void onStateChanged(@NonNull View bottomSheet, int newState) {
-                            if (mBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
-                                animationView.setMinAndMaxProgress(0.5f, 1.0f);
-                            } else {
-                                animationView.setMinAndMaxProgress(0.0f, 0.5f);
-                            }
-                            animationView.playAnimation();
-                        }
-
-                        @Override
-                        public void onSlide(@NonNull View bottomSheet, float slideOffset) {
-
+                        public void transformPage(@NonNull View page, float position) {
+                            float r = 1 - Math.abs(position);
+                            page.setScaleY(0.86f+r*0.14f);
                         }
                     });
 
-                    animationView.setOnClickListener(view -> {
-                        if (mBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
-                            mBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-                        } else if (mBehavior.getState() == BottomSheetBehavior.STATE_COLLAPSED) {
-                            mBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-                        }
-                    });
+                    view_pager.setPageTransformer(transformer);
                 }
-            });
+            }
         });
 
-        artViewModel.getImages().observe(this, arts -> {
+        artViewModel.getPreloadImages().observe(this, arts -> {
             if (arts.size() > 0) {
                 preLoadImages(arts);
             }
         });
-
     }
 
-    private void preLoadImages(List<Art> arts) {
+    private void preLoadImages(@NonNull List<Art> arts) {
         Art art = arts.remove(0);
-        Handler h = new Handler();
 
-        h.postDelayed(() -> {
-            Glide
-                    .with(getApplicationContext())
-                    .load(art.getImage())
-                    .listener(new RequestListener<Drawable>() {
-                        @Override
-                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                            arts.add(art);
-                            return false;
-                        }
+        Glide
+                .with(getApplicationContext())
+                .load(art.getImage())
+                .preload();
 
-                        @Override
-                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                            return false;
-                        }
-                    })
-                    .override(2000, 2000)
-                    .into(imgGlide);
-
+        if (arts.size() > 0) {
             preLoadImages(arts);
-        }, 10000);
-
+        }
     }
 
-    private void setupDisplay(List<Art> arts, int position) {
+    private void setupDisplay(@NonNull List<Art> arts, int position) {
         Art art = arts.get(position);
 
         Log.d(TAG, "setupDisplay: Art info:\nTitle: " + art.getTitle() + "\nArtist: " + art.getArtist() + "\nDescription: " + art.getDescription() +
@@ -266,7 +212,8 @@ public class MainActivity extends AppCompatActivity {
         backgroundTransition1.startTransition(1000);
     }
 
-    private int[] extractColors(String rgb) {
+    @NonNull
+    private int[] extractColors(@NonNull String rgb) {
         int[] colorRGB = new int[3];
 
         String[] rgbValues = rgb.split(",");

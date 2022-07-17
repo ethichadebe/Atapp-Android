@@ -23,6 +23,7 @@
         android:background="@drawable/round_corners" />
 
     <RelativeLayout
+        android:id="@+id/rlLogo"
         android:layout_width="300dp"
         android:layout_height="400dp"
         android:layout_centerInParent="true">
@@ -96,5 +97,30 @@
                 android:textSize="48sp" />
         </LinearLayout>
     </RelativeLayout>
+
+    <TextView
+        android:id="@+id/tvArtist"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/rlLogo"
+        android:fontFamily="@font/lilitaone_regular"
+        android:gravity="center"
+        android:text="Connection error..."
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/tvRetry"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvArtist"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="10dp"
+        android:textColor="#84BAFE"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="10dp"
+        android:fontFamily="@font/lilitaone_regular"
+        android:gravity="center"
+        android:text="Retry"
+        android:textSize="24sp" />
 
 </RelativeLayout>

@@ -8,7 +8,7 @@ import com.ethichadebe.atapp.Local.ArtDao;
 
 public class DeleteArtAsyncTask extends AsyncTask<Art, Void, Void> {
     private static final String TAG = "DeleteArtAsyncTask";
-    private ArtDao artDao;
+   private ArtDao artDao;
 
     public DeleteArtAsyncTask(ArtDao artDao) {
         this.artDao = artDao;
@@ -18,7 +18,6 @@ public class DeleteArtAsyncTask extends AsyncTask<Art, Void, Void> {
     protected Void doInBackground(Art... arts) {
         artDao.delete(arts[0]);
         Log.d(TAG, "doInBackground: Deleted item " + arts[0].getTitle());
-
         return null;
     }
 }

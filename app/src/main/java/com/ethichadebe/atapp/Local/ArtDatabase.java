@@ -10,7 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.ethichadebe.atapp.Art;
 
-@Database(entities = Art.class, version = 11)
+@Database(entities = Art.class, version = 12)
 public abstract class ArtDatabase extends RoomDatabase {
 
     private static ArtDatabase instance;
