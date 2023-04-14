@@ -7,6 +7,8 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Util {
     public static final String SHARED_PREFS = "SHAREDpREFS";
@@ -38,5 +40,16 @@ public class Util {
         for (int i = 0; i < size; i++)
             array[i] = prefs.getString(SAVED_DATE + "_" + i, null);
         return array;
+    }
+
+    public static String generateRandomWord() {
+        int wordLength = ThreadLocalRandom.current().nextInt(3, 20 + 1);
+        Random r = new Random(); // Initialize a Random Number Generator with SysTime as the seed
+        StringBuilder sb = new StringBuilder(wordLength);
+        for (int i = 0; i < wordLength; i++) { // For each letter in the word
+            char tmp = (char) ('a' + r.nextInt('z' - 'a')); // Generate a letter between a and z
+            sb.append(tmp); // Add it to the String
+        }
+        return sb.toString();
     }
 }

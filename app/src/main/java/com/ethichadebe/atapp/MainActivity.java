@@ -102,31 +102,25 @@ public class MainActivity extends AppCompatActivity {
 
         artViewModel = new ViewModelProvider(this).get(ArtViewModel.class);
 
-        artViewModel.getLocalData().observe(this, new Observer<List<Art>>() {
-            @Override
-            public void onChanged(List<Art> arts) {
+        artViewModel.getLocalData().observe(this, arts -> {
 
-                if (arts!=null){
-                    adapter = new ArtSliderAdapter(arts.toArray(new Art[0]),MainActivity.this,MainActivity.this);
-                    view_pager.setAdapter(adapter);
-                    view_pager.setOffscreenPageLimit(10);
-                    view_pager.setClipChildren(false);
-                    view_pager.setClipToPadding(false);
+            if (arts!=null){
+                adapter = new ArtSliderAdapter(arts.toArray(new Art[0]),MainActivity.this,MainActivity.this);
+                view_pager.setAdapter(adapter);
+                view_pager.setOffscreenPageLimit(10);
+                view_pager.setClipChildren(false);
+                view_pager.setClipToPadding(false);
 
-                    view_pager.getChildAt(0).setOverScrollMode(RecyclerView.OVER_SCROLL_NEVER);
+                view_pager.getChildAt(0).setOverScrollMode(RecyclerView.OVER_SCROLL_NEVER);
 
-                    CompositePageTransformer transformer = new CompositePageTransformer();
-                    transformer.addTransformer(new MarginPageTransformer(40));
-                    transformer.addTransformer(new ViewPager2.PageTransformer() {
-                        @Override
-                        public void transformPage(@NonNull View page, float position) {
-                            float r = 1 - Math.abs(position);
-                            page.setScaleY(0.86f+r*0.14f);
-                        }
-                    });
+                CompositePageTransformer transformer = new CompositePageTransformer();
+                transformer.addTransformer(new MarginPageTransformer(40));
+                transformer.addTransformer((page, position) -> {
+                    float r = 1 - Math.abs(position);
+                    page.setScaleY(0.86f+r*0.14f);
+                });
 
-                    view_pager.setPageTransformer(transformer);
-                }
+                view_pager.setPageTransformer(transformer);
             }
         });
 

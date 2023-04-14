@@ -10,7 +10,6 @@ public class Art {
     @NonNull
     private int artId;
     private String link;
-    private String random_word;
     private String image;
     private String title;
     private String size;
@@ -20,9 +19,8 @@ public class Art {
     private String muted;
     private String used;
 
-    public Art(@NonNull String link, String random_word, String image, String title, String size, String artist, String description, String vibrant, String muted, String used) {
+    public Art(@NonNull String link, String image, String title, String size, String artist, String description, String vibrant, String muted, String used) {
         this.link = link;
-        this.random_word = random_word;
         this.image = image;
         this.title = title;
         this.size = size;
@@ -35,10 +33,6 @@ public class Art {
 
     public String getLink() {
         return link;
-    }
-
-    public String getRandom_word() {
-        return random_word;
     }
 
     public String getImage() {
