@@ -8,23 +8,24 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.palette.graphics.Palette;
 
 import com.airbnb.lottie.LottieAnimationView;
-import com.ethichadebe.atapp.Util.Util;
 import com.ethichadebe.atapp.ViewModel.ArtViewModel;
 
 import org.jsoup.Jsoup;
@@ -32,16 +33,18 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class SplashScreenActivity extends AppCompatActivity {
     private static final String TAG = "SplashScreenActivity";
 
-    private ArrayList<Art> items;
+    private Art art;
     private RelativeLayout rlBody;
     private Animation zoom;
     private ImageView img, ivMyLogo;
@@ -87,7 +90,7 @@ public class SplashScreenActivity extends AppCompatActivity {
         Log.d(TAG, "onCreate:\ncurrent time " + currentTime() + " saved time: " + sharedPreferences.getString(SAVED_DATE, ""));
         if (sharedPreferences.getString(SAVED_DATE, "").isEmpty()) {
             Log.d(TAG, "onCreate: empty");
-            scraper.execute();
+            //scraper.execute();
             editor.putString(SAVED_DATE, currentTime());
             editor.apply();
         } else if (!sharedPreferences.getString(SAVED_DATE, "").equals(currentTime())) {
@@ -119,7 +122,6 @@ public class SplashScreenActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Void unused) {
-            startActivity(new Intent(getApplicationContext(), MainActivity.class));
             super.onPostExecute(unused);
         }
 
@@ -140,9 +142,61 @@ public class SplashScreenActivity extends AppCompatActivity {
         }
     }
 
+    public class GetImageFromUrl extends AsyncTask<String, Void, Void> {
+        private Bitmap bitmap;
+
+        @Override
+        protected Void doInBackground(String... url) {
+            String stringUrl = url[0];
+            InputStream inputStream;
+            try {
+                inputStream = new java.net.URL(stringUrl).openStream();
+                bitmap = BitmapFactory.decodeStream(inputStream);
+                // Log.d(TAG, "doInBackground: " + bitmap.i);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void unused) {
+            super.onPostExecute(unused);
+            Palette.from(bitmap).maximumColorCount(8).generate(palette -> {
+                assert palette != null;
+                int max = palette.getSwatches().get(0).getRgb();
+                int min = palette.getSwatches().get(0).getRgb();
+                Palette.Swatch maxSwatch = palette.getSwatches().get(0);
+                Palette.Swatch minSwatch = palette.getSwatches().get(0);
+
+                for (int i = 0; i < palette.getSwatches().size(); i++) {
+                    if (min > palette.getSwatches().get(i).getRgb()) {
+                        min = palette.getSwatches().get(i).getRgb();
+                        minSwatch = palette.getSwatches().get(i);
+                    }
+
+                    if (max < palette.getSwatches().get(i).getRgb()) {
+                        max = palette.getSwatches().get(i).getRgb();
+                        maxSwatch = palette.getSwatches().get(i);
+                    }
+                }
+
+                Log.d(TAG, "doInBackground: muted: " + minSwatch.toString().substring(minSwatch.toString().indexOf("[") + 1,
+                        minSwatch.toString().indexOf("]")).split("#", 2)[1]);
+                Log.d(TAG, "doInBackground: vibrant: " + maxSwatch);
+                Log.d(TAG, "doInBackground: Results-----------------------------------------------------------------------------------");
+                art.setVibrant(minSwatch.toString().substring(minSwatch.toString().indexOf("[") + 1,
+                        minSwatch.toString().indexOf("]")).split("#", 2)[1]);
+                art.setMuted(maxSwatch.toString().substring(maxSwatch.toString().indexOf("[") + 1,
+                        maxSwatch.toString().indexOf("]")).split("#", 2)[1]);
+                artViewModel.insert(art);
+                startActivity(new Intent(getApplicationContext(), MainActivity.class));
+            });
+        }
+    }
+
     private void scrapeData() {
         int randomNum = ThreadLocalRandom.current().nextInt(1, 76413 + 1);
-        items = new ArrayList<>();
         try {
             Log.d(TAG, "doInBackground: Random number: " + randomNum);
 
@@ -151,9 +205,9 @@ public class SplashScreenActivity extends AppCompatActivity {
             Elements data = document.select("div.section-row");
 
             if (data.select("span.object-image-helper").select("img").eq(0).attr("src")
-                    .equals("/content/dam/ngaweb/placeholders/placeholder-lg.svg")){
+                    .equals("/content/dam/ngaweb/placeholders/placeholder-lg.svg")) {
                 scrapeData();
-            }else {
+            } else {
                 Log.d(TAG, "doInBackground: size " + data);
 
                 String link = "https://www.nga.gov/collection/art-object-page." + randomNum + ".html";
@@ -168,9 +222,10 @@ public class SplashScreenActivity extends AppCompatActivity {
                 Log.d(TAG, "doInBackground: title: " + title);
                 Log.d(TAG, "doInBackground: size: " + size);
                 Log.d(TAG, "doInBackground: artist: " + artist);
-                Log.d(TAG, "doInBackground: Results-----------------------------------------------------------------------------------");
 
-                items.add(new Art(link,image,title,size,artist,"",))
+                art = new Art(randomNum, link, image, title, size, artist, "", "fff", "000", "");
+
+                new GetImageFromUrl().execute(image);
             }
 
                     /*items.add(new Art(name, Double.parseDouble(price.replaceAll("[^\\d.]", "")),

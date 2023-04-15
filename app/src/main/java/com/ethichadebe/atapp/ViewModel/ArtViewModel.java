@@ -42,6 +42,13 @@ public class ArtViewModel extends AndroidViewModel {
         repo.delete(art);
     }
 
+    /**
+     * remove art piece from local room database
+     */
+    public void insert(Art art) {
+        repo.insert(art);
+    }
+
     public boolean moreArtNeeded() {
         return repo.moreArtNeeded();
     }

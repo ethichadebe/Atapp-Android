@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
     private CoordinatorLayout clFirstBackground;
 
-    private LottieAnimationView animationView, lavLoader;
+    private LottieAnimationView animationView;
 
     private TabLayout tlLayout;
     private ViewPager2 view_pager;
@@ -82,7 +82,6 @@ public class MainActivity extends AppCompatActivity {
         view_pager = findViewById(R.id.view_pager);
 
 
-
         tvArtist = findViewById(R.id.tvArtist);
         tvTitle = findViewById(R.id.tvTitle);
         tvDescription = findViewById(R.id.tvDescription);
@@ -91,7 +90,6 @@ public class MainActivity extends AppCompatActivity {
         tvDescription.setMovementMethod(new ScrollingMovementMethod());
         bottomSheet = findViewById(R.id.rlBottomSheet);
 
-        lavLoader = findViewById(R.id.lavLoader);
         animationView = findViewById(R.id.animationView);
         animationView.setMinAndMaxProgress(0.0f, 0.5f);
 
@@ -104,8 +102,8 @@ public class MainActivity extends AppCompatActivity {
 
         artViewModel.getLocalData().observe(this, arts -> {
 
-            if (arts!=null){
-                adapter = new ArtSliderAdapter(arts.toArray(new Art[0]),MainActivity.this,MainActivity.this);
+            if (arts != null) {
+                adapter = new ArtSliderAdapter(arts.toArray(new Art[0]), MainActivity.this, MainActivity.this);
                 view_pager.setAdapter(adapter);
                 view_pager.setOffscreenPageLimit(10);
                 view_pager.setClipChildren(false);
@@ -117,10 +115,11 @@ public class MainActivity extends AppCompatActivity {
                 transformer.addTransformer(new MarginPageTransformer(40));
                 transformer.addTransformer((page, position) -> {
                     float r = 1 - Math.abs(position);
-                    page.setScaleY(0.86f+r*0.14f);
+                    page.setScaleY(0.86f + r * 0.14f);
                 });
 
                 view_pager.setPageTransformer(transformer);
+                setupDisplay(arts, 0);
             }
         });
 
@@ -133,12 +132,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void preLoadImages(@NonNull List<Art> arts) {
         Art art = arts.remove(0);
-
-        Glide
-                .with(getApplicationContext())
-                .load(art.getImage())
-                .preload();
-
+        Glide.with(getApplicationContext()).load(art.getImage()).preload();
         if (arts.size() > 0) {
             preLoadImages(arts);
         }
@@ -147,8 +141,7 @@ public class MainActivity extends AppCompatActivity {
     private void setupDisplay(@NonNull List<Art> arts, int position) {
         Art art = arts.get(position);
 
-        Log.d(TAG, "setupDisplay: Art info:\nTitle: " + art.getTitle() + "\nArtist: " + art.getArtist() + "\nDescription: " + art.getDescription() +
-                "\nImage: " + art.getImage() + "\nVibrant color: " + art.getVibrant() + "\nMuted color: " + art.getMuted());
+        Log.d(TAG, "setupDisplay: Art info:\nTitle: " + art.getTitle() + "\nArtist: " + art.getArtist() + "\nDescription: " + art.getDescription() + "\nImage: " + art.getImage() + "\nVibrant color: " + art.getVibrant() + "\nMuted color: " + art.getMuted());
         int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
         switch (currentNightMode) {
             case Configuration.UI_MODE_NIGHT_NO:
@@ -168,21 +161,14 @@ public class MainActivity extends AppCompatActivity {
         //adapter.reDisplayItem(position);
     }
 
-    private void setForeGround(@NonNull Art art, String strColor) {
-        int color = Color.rgb(extractColors(strColor)[0],
-                extractColors(strColor)[1],
-                extractColors(strColor)[2]);
+    private void setForeGround(@NonNull Art art, String color) {
 
-        tvTitle.setTextColor(color);
-        tvArtist.setTextColor(color);
-        tvDescription.setTextColor(color);
-        tvSmartifyLink.setTextColor(color);
-        animationView.addValueCallback(
-                new KeyPath("**"),
-                LottieProperty.COLOR_FILTER,
-                frameInfo -> new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_ATOP)
-        );
-        tlLayout.setSelectedTabIndicatorColor(color);
+        tvTitle.setTextColor(Color.parseColor("#" + color));
+        tvArtist.setTextColor(Color.parseColor("#" + color));
+        tvDescription.setTextColor(Color.parseColor("#" + color));
+        tvSmartifyLink.setTextColor(Color.parseColor("#" + color));
+        animationView.addValueCallback(new KeyPath("**"), LottieProperty.COLOR_FILTER, frameInfo -> new PorterDuffColorFilter(Color.parseColor("#" + color), PorterDuff.Mode.SRC_ATOP));
+        tlLayout.setSelectedTabIndicatorColor(Color.parseColor("#" + color));
 
         tvTitle.setText(art.getTitle());
         tvArtist.setText(art.getArtist());
@@ -193,8 +179,8 @@ public class MainActivity extends AppCompatActivity {
     private void setBackground(String prevColor, String color) {
         ColorDrawable[] backgroundDrawables = new ColorDrawable[2];
 
-        backgroundDrawables[0] = new ColorDrawable(Color.rgb(extractColors(prevColor)[0], extractColors(prevColor)[1], extractColors(prevColor)[2]));
-        backgroundDrawables[1] = new ColorDrawable(Color.rgb(extractColors(color)[0], extractColors(color)[1], extractColors(color)[2]));
+        backgroundDrawables[0] = new ColorDrawable(Color.parseColor("#" + prevColor));
+        backgroundDrawables[1] = new ColorDrawable(Color.parseColor("#" + color));
 
         TransitionDrawable backgroundTransition = new TransitionDrawable(backgroundDrawables);
         TransitionDrawable backgroundTransition1 = new TransitionDrawable(backgroundDrawables);
@@ -204,19 +190,6 @@ public class MainActivity extends AppCompatActivity {
 
         backgroundTransition.startTransition(1000);
         backgroundTransition1.startTransition(1000);
-    }
-
-    @NonNull
-    private int[] extractColors(@NonNull String rgb) {
-        int[] colorRGB = new int[3];
-
-        String[] rgbValues = rgb.split(",");
-
-        colorRGB[0] = (int) Double.parseDouble(rgbValues[0]);
-        colorRGB[1] = (int) Double.parseDouble(rgbValues[1]);
-        colorRGB[2] = (int) Double.parseDouble(rgbValues[2]);
-
-        return colorRGB;
     }
 
     @Override

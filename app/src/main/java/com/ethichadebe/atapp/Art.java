@@ -19,7 +19,8 @@ public class Art {
     private String muted;
     private String used;
 
-    public Art(@NonNull String link, String image, String title, String size, String artist, String description, String vibrant, String muted, String used) {
+    public Art(@NonNull int artId, String link, String image, String title, String size, String artist, String description, String vibrant, String muted, String used) {
+        this.artId = artId;
         this.link = link;
         this.image = image;
         this.title = title;
@@ -73,5 +74,41 @@ public class Art {
 
     public void setArtId(int artId) {
         this.artId = artId;
+    }
+
+    public void setLink(String link) {
+        this.link = link;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setSize(String size) {
+        this.size = size;
+    }
+
+    public void setArtist(String artist) {
+        this.artist = artist;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setVibrant(String vibrant) {
+        this.vibrant = vibrant;
+    }
+
+    public void setMuted(String muted) {
+        this.muted = muted;
+    }
+
+    public void setUsed(String used) {
+        this.used = used;
     }
 }
