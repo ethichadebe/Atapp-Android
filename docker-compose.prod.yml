@@ -1,0 +1,55 @@
+# Production stack. Deployed by ethichadebe/workflows compose-deploy.yml: CI
+# builds the backend and frontend images and the server swaps them in by
+# digest. See https://github.com/ethichadebe/workflows/blob/main/docs/compose-destination.md
+#
+# All values come from .env beside this file on the server; .env.example lists
+# them. Nothing in here names a host, address or secret.
+
+# Pinned so the network is `atapp_default` wherever the folder lives: the
+# deploy starts its candidate containers on that network.
+name: atapp
+
+services:
+  # Never swapped by a deploy: a fixed image, so `docker compose up -d` after a
+  # cutover leaves this container exactly as it was.
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    # Set by the deploy in .env at cutover, by digest, and kept so the previous
+    # value can be put back. Listens on 3001; not published on the host — the
+    # frontend's nginx reaches it as http://backend:3001.
+    image: ${BACKEND_IMAGE}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    image: ${FRONTEND_IMAGE}
+    restart: unless-stopped
+    ports:
+      # Required: this box already serves other apps, so the site is published
+      # on a local port the system nginx proxies to (e.g. 127.0.0.1:8083).
+      # Never 13001 or 18082 — the deploy checks candidates on those.
+      - "${FRONTEND_PORT:?set FRONTEND_PORT in .env}:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

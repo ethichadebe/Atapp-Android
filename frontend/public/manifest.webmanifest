@@ -1,0 +1,10 @@
+{
+  "name": "Atapp — art of the day",
+  "short_name": "Atapp",
+  "description": "One artwork from the National Gallery of Art, Washington, every day.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1b1b1d",
+  "theme_color": "#1b1b1d",
+  "icons": [{ "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+}

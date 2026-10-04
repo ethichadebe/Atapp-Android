@@ -1,0 +1,379 @@
+/* Mobile first: everything below is the phone layout; the one media query at
+   the end adapts it for wide screens. Colours are set per artwork from
+   colours.ts on <html>, and fade between days as the Android app's did. */
+
+@font-face {
+  font-family: "Lilita One";
+  src: url("./lilitaone-regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root {
+  --bg: #1b1b1d;
+  --text: #f5f3ee;
+  --subtle: #b9b6b0;
+  --accent: #d8b779;
+  --display: "Lilita One", system-ui, sans-serif;
+  color-scheme: light dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  transition:
+    background-color 1s ease,
+    color 1s ease;
+}
+
+#root {
+  height: 100%;
+}
+
+a {
+  color: var(--accent);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.wordmark {
+  font-family: var(--display);
+  font-size: 1.5rem;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.muted,
+.credit {
+  color: var(--subtle);
+}
+
+.button {
+  display: inline-block;
+  margin: 8px 0;
+  padding: 12px 18px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 100%;
+  padding: 24px max(16px, env(safe-area-inset-left));
+  text-align: center;
+}
+
+.message .credit {
+  max-width: 32rem;
+  font-size: 0.8rem;
+}
+
+/* ── Main layout ────────────────────────────────────────────────────────── */
+
+.app {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  height: 100vh;
+  height: 100dvh;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px max(16px, env(safe-area-inset-right)) 4px max(16px, env(safe-area-inset-left));
+}
+
+.day {
+  color: var(--subtle);
+  font-weight: 600;
+}
+
+.pager {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  outline: none;
+}
+
+.pager::-webkit-scrollbar {
+  display: none;
+}
+
+.slide {
+  position: relative;
+  flex: 0 0 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+.frame {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px 12px;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.frame img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+}
+
+/* ── The sheet: title and artist, tap for the rest ─────────────────────── */
+
+.sheet {
+  margin: 0 12px 4px;
+  border-radius: 16px;
+  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 88%, var(--text));
+}
+
+.sheet.open {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 4px;
+  margin: 0;
+  max-height: 78%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: 0 -8px 30px rgb(0 0 0 / 0.3);
+}
+
+.sheet-head {
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  width: 100%;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 16px;
+  background: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.title {
+  grid-column: 1;
+  font-family: var(--display);
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.artist {
+  grid-column: 1;
+  color: var(--subtle);
+}
+
+.chevron {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  width: 10px;
+  height: 10px;
+  margin-left: 12px;
+  border-right: 2px solid var(--accent);
+  border-top: 2px solid var(--accent);
+  transform: rotate(-45deg);
+  transition: transform 0.2s ease;
+}
+
+.open .chevron {
+  transform: rotate(135deg);
+}
+
+.sheet-body {
+  padding: 0 16px 16px;
+}
+
+.sheet-body h2 {
+  margin: 16px 0 4px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--subtle);
+}
+
+.sheet-body p {
+  margin: 0 0 8px;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+dt {
+  color: var(--subtle);
+}
+
+dd {
+  margin: 0;
+}
+
+.pre {
+  white-space: pre-line;
+}
+
+.credit {
+  margin: 12px 0 0;
+  font-size: 0.75rem;
+}
+
+/* ── Day navigation ─────────────────────────────────────────────────────── */
+
+.dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 2px 0 6px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--subtle);
+  opacity: 0.5;
+}
+
+.dot.on {
+  background: var(--accent);
+  opacity: 1;
+}
+
+.arrow {
+  width: 44px;
+  height: 36px;
+  border: 0;
+  background: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.arrow:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.courtesy {
+  padding: 0 16px 6px;
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--subtle);
+}
+
+.courtesy a {
+  color: inherit;
+}
+
+/* ── Full-size view ─────────────────────────────────────────────────────── */
+
+.zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.95);
+  overflow: auto;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+.zoom img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.zoom-close {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 8px);
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.15);
+  color: #fff;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  body,
+  .chevron {
+    transition: none;
+  }
+}
+
+/* ── Wide screens: image and details side by side ──────────────────────── */
+
+@media (min-width: 900px) {
+  .slide {
+    flex-direction: row;
+    align-items: center;
+    padding: 0 24px;
+  }
+
+  .frame {
+    height: 100%;
+  }
+
+  .sheet,
+  .sheet.open {
+    position: static;
+    flex: 0 0 360px;
+    max-height: 90%;
+    overflow-y: auto;
+    margin: 0;
+  }
+}

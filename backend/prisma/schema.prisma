@@ -1,0 +1,82 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// MIGRATIONS MUST BE ADDITIVE. The deploy runs the candidate against the live
+// database, and refuses any migration that drops, renames, retypes or adds
+// NOT NULL to an existing column. New columns are nullable or have a default.
+// `src/migrations.test.ts` applies the same check before CI does.
+
+// One artwork from the National Gallery of Art open data
+// (github.com/NationalGalleryOfArt/opendata, CC0). Only objects with an
+// open-access primary image are imported: nothing else can be shown.
+//
+// Rows are never deleted. An object that drops out of the dataset, or loses
+// its open-access image, gets `removedAt` and is no longer picked — but a past
+// day that already showed it keeps working.
+model Artwork {
+  // NGA's own `objectid`. Stable across their daily exports.
+  objectId       Int       @id @map("object_id")
+  title          String
+  // NGA's display attribution, e.g. "Mary Cassatt" or "Workshop of Titian".
+  attribution    String?
+  displayDate    String?   @map("display_date")
+  medium         String?
+  // Free text, often several lines ("overall: …\nframed: …").
+  dimensions     String?
+  creditLine     String?   @map("credit_line")
+  classification String?
+  // The primary published image. `iiifUrl` is the IIIF Image API base; sizes
+  // are asked for by URL (see src/artwork.ts).
+  imageUuid      String    @map("image_uuid")
+  iiifUrl        String    @map("iiif_url")
+  imageWidth     Int?      @map("image_width")
+  imageHeight    Int?      @map("image_height")
+  // NGA's `assistivetext`: a plain description of what the image shows. The
+  // dataset has no curatorial essay, so this doubles as the description.
+  imageAltText   String?   @map("image_alt_text")
+  // Two colours taken from the image, the Android Palette API's job in the old
+  // app. Filled lazily the first time the artwork is served, as "#rrggbb".
+  vibrant        String?
+  muted          String?
+  importedAt     DateTime  @map("imported_at")
+  removedAt      DateTime? @map("removed_at")
+
+  picks DailyPick[]
+
+  @@index([removedAt])
+  @@map("artworks")
+}
+
+// The art of the day. The choice is a pure function of the date over the
+// collection (src/dailyPick.ts) — no scheduled job — and is written here the
+// first time anyone asks, so a dataset refresh later that day cannot change
+// what everyone is looking at.
+model DailyPick {
+  day       DateTime @id @db.Date
+  objectId  Int      @map("object_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  artwork Artwork @relation(fields: [objectId], references: [objectId])
+
+  @@map("daily_picks")
+}
+
+// One run of the importer, kept so it is visible when the data last moved.
+model DatasetImport {
+  id         Int       @id @default(autoincrement())
+  source     String
+  startedAt  DateTime  @default(now()) @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+  imported   Int?
+  removed    Int?
+  error      String?
+
+  @@map("dataset_imports")
+}
