@@ -323,8 +323,9 @@ a {
   transform: translateX(-50%);
 }
 
-.splash-logo img {
+.splash-logo .logo {
   display: block;
+  color: #000;
 }
 
 /* --zoom-x/--zoom-y are 2 × screen ÷ card, set by Splash.tsx. */
@@ -340,6 +341,9 @@ a {
 @media (prefers-color-scheme: dark) {
   .splash {
     background: #000;
+  }
+  .splash-logo .logo {
+    color: #fff;
   }
 }
 

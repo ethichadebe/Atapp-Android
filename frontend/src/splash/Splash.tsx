@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { pickDancer, showDancerIcon } from "./dancers";
-import logoBlack from "./logo-black.png";
-import logoWhite from "./logo-white.png";
+import { Logo } from "./Logo";
 
 // The Android app's opening screen (SplashScreenActivity and
 // res/layout/activity_splash_screen.xml): a pale card shrinking from twice its
@@ -113,10 +112,9 @@ export function Splash({ ready, onDone }: { ready: boolean; onDone: () => void }
         </div>
         <div className="splash-dancer" ref={stage} aria-hidden="true" />
       </div>
-      <picture className="splash-logo">
-        <source srcSet={logoWhite} media="(prefers-color-scheme: dark)" />
-        <img src={logoBlack} alt="" width={28} height={28} />
-      </picture>
+      <div className="splash-logo">
+        <Logo />
+      </div>
     </div>
   );
 }
