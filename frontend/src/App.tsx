@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchRecent, type Artwork, type Day } from "./api";
 import { themeFor } from "./colours";
+import { Splash } from "./splash/Splash";
 
 type State = { status: "loading" } | { status: "error" } | { status: "ready"; days: Day[] };
 
@@ -40,7 +41,7 @@ function applyTheme(artwork: Artwork | null, dark: boolean) {
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", t.background);
 }
 
-export function App() {
+function Content({ onSettled }: { onSettled: () => void }) {
   const [state, setState] = useState<State>({ status: "loading" });
   const dark = useDarkMode();
   const [active, setActive] = useState(0);
@@ -65,6 +66,11 @@ export function App() {
   }, []);
 
   useEffect(() => load(), [load]);
+
+  // Tells the opening screen it may go: there is an artwork, or a message, to show.
+  useEffect(() => {
+    if (state.status !== "loading") onSettled();
+  }, [state.status, onSettled]);
 
   const days = state.status === "ready" ? state.days : [];
   const current = days[active]?.artwork ?? null;
@@ -106,6 +112,19 @@ export function App() {
     <>
       <Pager days={days} today={today} active={active} onActive={setActive} onZoom={setZoomed} />
       {zoomed && <Zoom artwork={zoomed} onClose={() => setZoomed(null)} />}
+    </>
+  );
+}
+
+export function App() {
+  const [splash, setSplash] = useState(true);
+  const [ready, setReady] = useState(false);
+  const hideSplash = useCallback(() => setSplash(false), []);
+  const settled = useCallback(() => setReady(true), []);
+  return (
+    <>
+      <Content onSettled={settled} />
+      {splash && <Splash ready={ready} onDone={hideSplash} />}
     </>
   );
 }
