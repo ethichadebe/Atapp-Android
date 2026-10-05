@@ -23,7 +23,8 @@ export interface ArtworkDto {
     thumbnail: string;
     sizes: { width: number; url: string }[];
   };
-  colours: { vibrant: string; muted: string } | null;
+  /** The page's two colours: background and text, swapped for dark/light mode. */
+  colours: { dark: string; light: string } | null;
 }
 
 const SIZES = [480, 800, 1200, 1800];
@@ -64,7 +65,7 @@ export function toDto(a: Artwork): ArtworkDto {
       thumbnail: iiifImage(a.iiifUrl, 200),
       sizes: sizes.map((width) => ({ width, url: iiifImage(a.iiifUrl, width) })),
     },
-    colours: a.vibrant && a.muted ? { vibrant: a.vibrant, muted: a.muted } : null,
+    colours: a.darkColour && a.lightColour ? { dark: a.darkColour, light: a.lightColour } : null,
   };
 }
 
@@ -83,7 +84,7 @@ export async function ensureColours(
   artwork: Artwork,
   palette: typeof fetchPalette = fetchPalette,
 ): Promise<Artwork> {
-  if (artwork.vibrant && artwork.muted) return artwork;
+  if (artwork.darkColour && artwork.lightColour) return artwork;
   const failedAt = lastFailure.get(artwork.objectId);
   if (failedAt !== undefined && Date.now() - failedAt < RETRY_AFTER_MS) return artwork;
   const found = await palette(iiifImage(artwork.iiifUrl, 100));
@@ -94,6 +95,6 @@ export async function ensureColours(
   lastFailure.delete(artwork.objectId);
   return db.artwork.update({
     where: { objectId: artwork.objectId },
-    data: { vibrant: found.vibrant, muted: found.muted },
+    data: { vibrant: found.vibrant, muted: found.muted, darkColour: found.dark, lightColour: found.light },
   });
 }

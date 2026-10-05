@@ -1,6 +1,6 @@
-/* Mobile first: everything below is the phone layout; the one media query at
-   the end adapts it for wide screens. Colours are set per artwork from
-   colours.ts on <html>, and fade between days as the Android app's did. */
+/* The Android app, reproduced from its layouts and screen recording. Sizes are
+   the native dp/sp values as CSS px. Colours come from each artwork (see
+   colours.ts) and are set on <html> as --bg and --text. */
 
 @font-face {
   font-family: "Lilita One";
@@ -9,11 +9,9 @@
 }
 
 :root {
-  --bg: #1b1b1d;
-  --text: #f5f3ee;
-  --subtle: #b9b6b0;
-  --accent: #d8b779;
-  --display: "Lilita One", system-ui, sans-serif;
+  --bg: #4d3d38;
+  --text: #e4dc8c;
+  --font: "Lilita One", system-ui, sans-serif;
   color-scheme: light dark;
 }
 
@@ -25,21 +23,20 @@ html,
 body {
   margin: 0;
   height: 100%;
+  overflow: hidden;
   background: var(--bg);
   color: var(--text);
-  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font);
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  /* The native TransitionDrawable: a 1 s crossfade to the next artwork's colour. */
   transition:
-    background-color 1s ease,
-    color 1s ease;
+    background-color 1s linear,
+    color 1s linear;
 }
 
 #root {
   height: 100%;
-}
-
-a {
-  color: var(--accent);
 }
 
 button {
@@ -47,339 +44,220 @@ button {
   color: inherit;
 }
 
-.wordmark {
-  font-family: var(--display);
-  font-size: 1.5rem;
-  letter-spacing: 0.02em;
-  margin: 0;
+a {
+  color: inherit;
 }
 
-.muted,
-.credit {
-  color: var(--subtle);
-}
-
-.button {
-  display: inline-block;
-  margin: 8px 0;
-  padding: 12px 18px;
-  min-height: 44px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--bg);
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-}
+/* ── Loading, error, empty ──────────────────────────────────────────────── */
 
 .message {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 100%;
-  padding: 24px max(16px, env(safe-area-inset-left));
+  height: 100%;
+  padding: 16px;
+  font-size: 24px;
   text-align: center;
 }
 
-.message .credit {
-  max-width: 32rem;
-  font-size: 0.8rem;
+.message p {
+  margin: 0;
 }
 
-/* ── Main layout ────────────────────────────────────────────────────────── */
-
-.app {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
-  height: 100vh;
-  height: 100dvh;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+.retry {
+  margin-top: 10px;
+  border: 0;
+  background: none;
+  font-size: 24px;
+  color: #84bafe;
+  cursor: pointer;
 }
 
-.top {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 10px max(16px, env(safe-area-inset-right)) 4px max(16px, env(safe-area-inset-left));
+/* ── Gallery ─────────────────────────────────────────────────────────────── */
+
+.gallery {
+  position: fixed;
+  inset: 0;
 }
 
-.day {
-  color: var(--subtle);
-  font-weight: 600;
+/* The slider: a translucent pill of 8 px slots (tlback: #19FFFFFF) and an
+   8 px dot in the text colour, 30 px from the top. */
+.indicator {
+  position: absolute;
+  z-index: 2;
+  top: calc(env(safe-area-inset-top) + 30px);
+  left: 50%;
+  height: 8px;
+  transform: translateX(-50%);
+  border-radius: 100px;
+  background: rgb(255 255 255 / 0.1);
+}
+
+.indicator-dot {
+  position: absolute;
+  top: 0;
+  height: 8px;
+  border-radius: 100px;
+  background: var(--text);
+  transition: background-color 1s linear;
 }
 
 .pager {
   display: flex;
+  gap: 40px;
+  height: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
-  outline: none;
 }
 
 .pager::-webkit-scrollbar {
   display: none;
 }
 
-.slide {
-  position: relative;
+.page {
   flex: 0 0 100%;
   display: flex;
-  flex-direction: column;
-  min-height: 0;
-  scroll-snap-align: center;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: start;
   scroll-snap-stop: always;
 }
 
-.frame {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 16px 12px;
-  border: 0;
-  background: none;
-  cursor: zoom-in;
-}
-
-.frame img {
+/* centerInside with a 10 px margin. Kept clear of the sheet's peek so a tall
+   artwork is never half hidden under it. */
+.art {
   display: block;
-  max-width: 100%;
-  max-height: 100%;
+  max-width: calc(100% - 20px);
+  max-height: calc(100dvh - 2 * 20dvh - 20px);
   width: auto;
   height: auto;
   object-fit: contain;
-  box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+  touch-action: pan-x;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: transform 0.25s ease-out;
 }
 
-/* ── The sheet: title and artist, tap for the rest ─────────────────────── */
+.art.zooming {
+  position: relative;
+  z-index: 5;
+  transition: none;
+}
+
+/* ── Bottom sheet ────────────────────────────────────────────────────────── */
 
 .sheet {
-  margin: 0 12px 4px;
-  border-radius: 16px;
+  position: fixed;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
   background: var(--bg);
-  background: color-mix(in srgb, var(--bg) 88%, var(--text));
-}
-
-.sheet.open {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 4px;
-  margin: 0;
-  max-height: 78%;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  box-shadow: 0 -8px 30px rgb(0 0 0 / 0.3);
+  transition-property: transform, background-color;
+  transition-timing-function: ease-out, linear;
+  transition-duration: 250ms, 1s;
+  will-change: transform;
 }
 
 .sheet-head {
-  position: sticky;
-  top: 0;
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: 100%;
-  padding: 14px 16px;
+  padding: 0 10px;
   border: 0;
-  border-radius: 16px;
-  background: inherit;
-  text-align: left;
-  cursor: pointer;
+  background: none;
+  text-align: center;
+  cursor: grab;
+  touch-action: none;
 }
 
-.title {
-  grid-column: 1;
-  font-family: var(--display);
-  font-size: 1.35rem;
+.sheet-arrow {
+  display: block;
+  width: 24px;
+  height: 24px;
+  margin: 10px;
+}
+
+.sheet-arrow path {
+  stroke: var(--text);
+  transition: stroke 1s linear;
+}
+
+.sheet-title {
+  margin: 10px 0;
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.sheet-artist {
+  font-size: 14px;
   line-height: 1.2;
 }
 
-.artist {
-  grid-column: 1;
-  color: var(--subtle);
-}
-
-.chevron {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: center;
-  width: 10px;
-  height: 10px;
-  margin-left: 12px;
-  border-right: 2px solid var(--accent);
-  border-top: 2px solid var(--accent);
-  transform: rotate(-45deg);
-  transition: transform 0.2s ease;
-}
-
-.open .chevron {
-  transform: rotate(135deg);
-}
-
 .sheet-body {
-  padding: 0 16px 16px;
+  flex: 1;
+  min-height: 0;
+  margin: 60px 10px 50px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.sheet-body h2 {
-  margin: 16px 0 4px;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--subtle);
-}
-
-.sheet-body p {
-  margin: 0 0 8px;
-}
-
-dl {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 12px;
+.sheet-description {
   margin: 0;
-}
-
-dt {
-  color: var(--subtle);
-}
-
-dd {
-  margin: 0;
-}
-
-.pre {
+  font-size: 22px;
+  line-height: 1.2;
+  text-align: center;
   white-space: pre-line;
 }
 
-.credit {
-  margin: 12px 0 0;
-  font-size: 0.75rem;
-}
-
-/* ── Day navigation ─────────────────────────────────────────────────────── */
-
-.dots {
+.sheet-foot {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 2px 0 6px;
-}
-
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--subtle);
-  opacity: 0.5;
-}
-
-.dot.on {
-  background: var(--accent);
-  opacity: 1;
-}
-
-.arrow {
-  width: 44px;
-  height: 36px;
-  border: 0;
-  background: none;
-  font-size: 1.6rem;
-  line-height: 1;
-  color: var(--accent);
-  cursor: pointer;
-}
-
-.arrow:disabled {
-  opacity: 0.25;
-  cursor: default;
-}
-
-.courtesy {
-  padding: 0 16px 6px;
+  gap: 4px;
+  margin: 10px 10px calc(env(safe-area-inset-bottom) + 10px);
   text-align: center;
-  font-size: 0.7rem;
-  color: var(--subtle);
 }
 
-.courtesy a {
-  color: inherit;
+.sheet-foot a {
+  font-size: 14px;
+  text-decoration: none;
 }
 
-/* ── Full-size view ─────────────────────────────────────────────────────── */
-
-.zoom {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgb(0 0 0 / 0.95);
-  overflow: auto;
-  touch-action: pan-x pan-y pinch-zoom;
+.sheet-credit {
+  font-family: system-ui, sans-serif;
+  font-size: 10px;
+  opacity: 0.75;
 }
 
-.zoom img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.zoom-close {
-  position: fixed;
-  top: calc(env(safe-area-inset-top) + 8px);
-  right: 12px;
-  width: 44px;
-  height: 44px;
-  border: 0;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 0.15);
-  color: #fff;
-  font-size: 1.8rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html,
-  body,
-  .chevron {
-    transition: none;
+/* Wide screens: the same app, in a phone-width column. */
+@media (min-width: 700px) {
+  .art {
+    max-width: min(calc(100% - 20px), 900px);
   }
-}
-
-/* ── Wide screens: image and details side by side ──────────────────────── */
-
-@media (min-width: 900px) {
-  .slide {
-    flex-direction: row;
-    align-items: center;
-    padding: 0 24px;
-  }
-
-  .frame {
-    height: 100%;
-  }
-
-  .sheet,
-  .sheet.open {
-    position: static;
-    flex: 0 0 360px;
-    max-height: 90%;
-    overflow-y: auto;
-    margin: 0;
+  .sheet-head,
+  .sheet-body,
+  .sheet-foot {
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
   }
 }
 
 /* ── Opening screen (the Android app's splash) ──────────────────────────── */
 
+/* Only the yellow card moves: it starts at twice the size of the SCREEN
+   (the native zoom.xml says 200%p — percent of the parent) and shrinks to
+   300×360 over 3 s. "ATAPP", the dancer and the logo
+   stay where they are. */
 .splash {
   position: fixed;
   inset: 0;
@@ -397,35 +275,45 @@ dd {
 }
 
 .splash-card {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: min(300px, 80vw);
-  aspect-ratio: 300 / 360;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 360px;
+  margin: -180px 0 0 -150px;
   border-radius: 20px;
   background: #ececaa;
-  animation: splash-zoom 3s ease-out both;
+  /* Android's AccelerateDecelerateInterpolator is a half cosine: exactly
+     easeInOutSine. Measured against the recording frame by frame. */
+  animation: splash-zoom 3s cubic-bezier(0.37, 0, 0.63, 1) both;
 }
 
-/* The dancer stands taller than the card, as on Android (200×400 on 300×360). */
-.splash-dancer {
-  position: absolute;
-  right: 11%;
-  top: 50%;
-  width: 66%;
-  aspect-ratio: 500 / 800;
-  transform: translateY(-50%);
+/* The native rlLogo: 300×400, letters in the column left of the 200×400
+   dancer, which sits 32 px in from the right. */
+.splash-content {
+  position: relative;
+  display: flex;
+  width: 300px;
+  height: 400px;
 }
 
 .splash-letters {
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
-  width: 34%;
-  font-family: var(--display);
-  font-size: clamp(2rem, 11vw, 3rem);
-  line-height: 1.15;
+  justify-content: center;
+  height: 360px;
+  align-self: center;
+  font-size: 48px;
+  line-height: 1.2;
   color: #84bafe;
+}
+
+.splash-dancer {
+  width: 200px;
+  height: 400px;
+  margin-right: 32px;
 }
 
 .splash-logo {
@@ -439,9 +327,10 @@ dd {
   display: block;
 }
 
+/* --zoom-x/--zoom-y are 2 × screen ÷ card, set by Splash.tsx. */
 @keyframes splash-zoom {
   from {
-    transform: scale(2);
+    transform: scale(var(--zoom-x, 2), var(--zoom-y, 2));
   }
   to {
     transform: scale(1);
@@ -455,10 +344,16 @@ dd {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html,
+  body,
+  .sheet,
+  .indicator-dot,
+  .art {
+    transition: none;
+  }
   .splash-card {
     animation: none;
   }
-
   .splash {
     transition: none;
   }

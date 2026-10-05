@@ -9,7 +9,7 @@ const db = new PrismaClient();
 afterAll(() => db.$disconnect());
 
 beforeEach(async () => {
-  await db.$executeRawUnsafe("TRUNCATE daily_picks, artworks, dataset_imports RESTART IDENTITY CASCADE");
+  await db.$executeRawUnsafe("TRUNCATE daily_set_items, daily_picks, artworks, dataset_imports RESTART IDENTITY CASCADE");
 });
 
 const collection = (ids: number[]) =>
@@ -21,7 +21,7 @@ const collection = (ids: number[]) =>
 let paletteCalls = 0;
 const fakePalette = async (): Promise<Palette> => {
   paletteCalls++;
-  return { vibrant: "#c81e1e", muted: "#6e737d" };
+  return { vibrant: "#c81e1e", muted: "#6e737d", dark: "#3a2f2a", light: "#e8dfa0" };
 };
 
 async function app(now = "2026-10-04T12:00:00Z", palette = fakePalette) {
@@ -52,7 +52,7 @@ describe("GET /artworks/today", () => {
       artist: "Mary Cassatt",
       description: `Picture ${morning.artwork.objectId}`,
       link: `https://www.nga.gov/collection/art-object-page.${morning.artwork.objectId}.html`,
-      colours: { vibrant: "#c81e1e", muted: "#6e737d" },
+      colours: { dark: "#3a2f2a", light: "#e8dfa0" },
     });
     expect(morning.artwork.image.sizes[0].url).toBe(
       `https://api.nga.gov/iiif/img-${morning.artwork.objectId}/full/!480,480/0/default.jpg`,
@@ -82,6 +82,46 @@ describe("GET /artworks/today", () => {
     await importDataset(db, collection(others));
     const after = (await (await app()).inject("/artworks/today")).json().artwork.objectId;
     expect(after).toBe(before);
+  });
+});
+
+describe("GET /artworks/daily", () => {
+  const many = Array.from({ length: 30 }, (_, i) => i + 1);
+
+  it("serves today's 10, starting with the art of the day, with their colours", async () => {
+    await importDataset(db, collection(many));
+    const today = (await (await app()).inject("/artworks/today")).json().artwork.objectId;
+    const res = await (await app()).inject("/artworks/daily");
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.date).toBe("2026-10-04");
+    expect(body.artworks).toHaveLength(10);
+    expect(new Set(body.artworks.map((a: { objectId: number }) => a.objectId)).size).toBe(10);
+    expect(body.artworks[0].objectId).toBe(today);
+    expect(body.artworks[3].colours).toEqual({ dark: "#3a2f2a", light: "#e8dfa0" });
+  });
+
+  it("is the same all day, even after the dataset changes", async () => {
+    await importDataset(db, collection(many));
+    const ids = (r: { artworks: { objectId: number }[] }) => r.artworks.map((a) => a.objectId);
+    const morning = ids((await (await app("2026-10-04T00:00:01Z")).inject("/artworks/daily")).json());
+    await importDataset(db, collection([...many.filter((id) => id !== morning[4]), 40, 41, 42]));
+    const night = ids((await (await app("2026-10-04T23:59:59Z")).inject("/artworks/daily")).json());
+    expect(night).toEqual(morning);
+  });
+
+  it("is a different 10 tomorrow", async () => {
+    await importDataset(db, collection(many));
+    const ids = (r: { artworks: { objectId: number }[] }) => r.artworks.map((a) => a.objectId);
+    const today = ids((await (await app("2026-10-04T12:00:00Z")).inject("/artworks/daily")).json());
+    const tomorrow = ids((await (await app("2026-10-05T12:00:00Z")).inject("/artworks/daily")).json());
+    expect(tomorrow).not.toEqual(today);
+  });
+
+  it("is empty, and still 200, before the first import", async () => {
+    const res = await (await app()).inject("/artworks/daily");
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ date: "2026-10-04", artworks: [] });
   });
 });
 
@@ -115,7 +155,7 @@ describe("importing", () => {
 
   it("keeps colours unless the image itself changed", async () => {
     await importDataset(db, collection([1, 2]));
-    await db.artwork.updateMany({ data: { vibrant: "#111111", muted: "#222222" } });
+    await db.artwork.updateMany({ data: { vibrant: "#111111", muted: "#222222", darkColour: "#000001", lightColour: "#fffffe" } });
     await importDataset(
       db,
       source(
@@ -125,7 +165,9 @@ describe("importing", () => {
     );
     const [one, two] = await db.artwork.findMany({ orderBy: { objectId: "asc" } });
     expect(one.vibrant).toBe("#111111");
+    expect(one.darkColour).toBe("#000001");
     expect(two.vibrant).toBeNull();
+    expect(two.darkColour).toBeNull();
   });
 
   it("refuses to mark artworks removed when an export looks truncated", async () => {

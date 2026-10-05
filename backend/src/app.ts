@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import type { PrismaClient } from "@prisma/client";
 import { prisma as defaultDb } from "./db.js";
-import { dayKey, pickForDay, recentPicks } from "./dailyPick.js";
+import { dayKey, pickForDay, recentPicks, setForDay } from "./dailyPick.js";
 import { ensureColours, toDto } from "./artwork.js";
 import type { fetchPalette } from "./palette.js";
 
@@ -33,6 +33,18 @@ export async function buildApp(opts: AppOptions = {}) {
     return {
       date: day,
       artwork: artwork ? toDto(await ensureColours(db, artwork, opts.palette)) : null,
+    };
+  });
+
+  // Today's 10: the slider. Same for everyone all day; position 0 is the art
+  // of the day. An empty list before the first import.
+  app.get("/artworks/daily", async (_req, reply) => {
+    const day = dayKey(now());
+    const set = await setForDay(db, day);
+    reply.header("Cache-Control", "public, max-age=300");
+    return {
+      date: day,
+      artworks: await Promise.all(set.map(async (a) => toDto(await ensureColours(db, a, opts.palette)))),
     };
   });
 

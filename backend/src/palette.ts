@@ -8,7 +8,15 @@ import jpeg from "jpeg-js";
 export interface Palette {
   vibrant: string;
   muted: string;
+  /** The darkest and brightest of the artwork's main colours: the pair the
+   *  Android app used for the page, so text always reads against background. */
+  dark: string;
+  light: string;
 }
+
+// The Android app asked Palette for at most 8 colours and took the darkest
+// and brightest of those. The same: the 8 most common, by population.
+const MAIN_COLOURS = 8;
 
 interface Swatch {
   r: number;
@@ -45,6 +53,44 @@ function toHsl(r: number, g: number, b: number): { s: number; l: number } {
   if (max === min) return { s: 0, l };
   const d = max - min;
   return { s: d / (1 - Math.abs(2 * l - 1)), l };
+}
+
+type Rgb = { r: number; g: number; b: number };
+const MIN_CONTRAST = 4.5;
+
+function contrastOf(a: Rgb, b: Rgb): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+function towards(c: Rgb, target: number, t: number): Rgb {
+  return { r: c.r + (target - c.r) * t, g: c.g + (target - c.g) * t, b: c.b + (target - c.b) * t };
+}
+
+/**
+ * The darkest and brightest colours, pushed apart — the dark one deeper, the
+ * light one paler, keeping their hues — until text in one reads on the other.
+ * Most paintings already pass and keep their exact colours; a print, whose
+ * main colours are all shades of paper, gets a deep and a pale version of its
+ * paper, so dark mode is still dark.
+ */
+export function readablePair(dark: Rgb, light: Rgb): [Rgb, Rgb] {
+  let d = dark;
+  let l = light;
+  for (let i = 0; i < 40 && contrastOf(d, l) < MIN_CONTRAST; i++) {
+    d = towards(d, 0, 0.08);
+    l = towards(l, 255, 0.08);
+  }
+  return [d, l];
+}
+
+/** Relative luminance (WCAG), 0 black to 1 white. */
+export function luminance({ r, g, b }: { r: number; g: number; b: number }): number {
+  const lin = (v: number) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
 export function toHex({ r, g, b }: { r: number; g: number; b: number }): string {
@@ -115,7 +161,9 @@ export function paletteFromPixels(rgba: Uint8Array, width: number, height: numbe
   const bySaturation = [...all].sort((a, b) => b.s - a.s);
   const vibrant = best(all, VIBRANT) ?? bySaturation[0];
   const muted = best(all, MUTED, vibrant) ?? bySaturation[bySaturation.length - 1];
-  return { vibrant: toHex(vibrant), muted: toHex(muted) };
+  const main = all.slice(0, MAIN_COLOURS).sort((a, b) => luminance(a) - luminance(b));
+  const [dark, light] = readablePair(main[0], main[main.length - 1]);
+  return { vibrant: toHex(vibrant), muted: toHex(muted), dark: toHex(dark), light: toHex(light) };
 }
 
 /**
