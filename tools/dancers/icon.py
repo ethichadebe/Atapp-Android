@@ -1,22 +1,26 @@
 """Crop a dancer's head-and-shoulders icon from a still, matching the app icon.
 
-    icon.py STILL.png HAIR_HEX OUT_PREFIX
+    icon.py STILL.png HAIR_HEX OUT_PREFIX [WIDTH] [TOP]
 
 STILL.png is a frame rendered at 4x by still.mjs; HAIR_HEX is the colour of the
 shape to frame (the hair, e.g. 1d1726). Writes OUT_PREFIX-32.png (browser tab)
-and OUT_PREFIX-180.png (home screen).
+and OUT_PREFIX-180.png (home screen). WIDTH is the icon's width in hair widths
+(1.55 suits big hair; short hair needs ~2.6); TOP is how far down the frame the
+hair can be found (0.35; lower it if clothing shares the hair's colour).
 """
 import sys
 import cv2, numpy as np
 
 still, hair_hex, prefix = sys.argv[1], sys.argv[2], sys.argv[3]
+width = float(sys.argv[4]) if len(sys.argv) > 4 else 1.55
+top_frac = float(sys.argv[5]) if len(sys.argv) > 5 else 0.35
 im = cv2.imread(still)
 bgr = np.array([int(hair_hex[i:i + 2], 16) for i in (4, 2, 0)])
 hair = np.abs(im.astype(int) - bgr).sum(2) < 12
-hair[int(im.shape[0] * 0.35):] = False  # the head is in the top third
+hair[int(im.shape[0] * top_frac):] = False  # the head is near the top
 ys, xs = np.nonzero(hair)
 x0, x1, y0 = xs.min(), xs.max(), ys.min()
-side = int((x1 - x0) * 1.55)  # the same framing as icon-512.png
+side = int((x1 - x0) * width)  # the same framing as icon-512.png
 cx, top = (x0 + x1) // 2, max(0, int(y0 - side * 0.11))
 crop = im[top:top + side, cx - side // 2: cx - side // 2 + side]
 for n in (32, 180):
