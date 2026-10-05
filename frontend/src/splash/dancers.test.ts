@@ -12,7 +12,12 @@ describe("pickDancer", () => {
     expect(pickDancer(() => 0.9999999).id).toBe(DANCERS[DANCERS.length - 1].id);
   });
 
-  it("includes both the original dance and the new one", () => {
-    expect(DANCERS.map((d) => d.id)).toEqual(["snoop", "zep"]);
+  it("includes the original dance and the traced ones", () => {
+    expect(DANCERS.map((d) => d.id)).toEqual(["snoop", "zep", "chad", "milan"]);
+  });
+
+  it("gives every dancer its own icons", () => {
+    expect(new Set(DANCERS.map((d) => d.icon)).size).toBe(DANCERS.length);
+    expect(new Set(DANCERS.map((d) => d.touchIcon)).size).toBe(DANCERS.length);
   });
 });
