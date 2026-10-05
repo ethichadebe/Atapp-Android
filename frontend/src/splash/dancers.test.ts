@@ -13,7 +13,7 @@ describe("pickDancer", () => {
   });
 
   it("includes the original dance and the traced ones", () => {
-    expect(DANCERS.map((d) => d.id)).toEqual(["snoop", "zep", "chad", "milan"]);
+    expect(DANCERS.map((d) => d.id)).toEqual(["snoop", "zep", "chad", "milan", "satin"]);
   });
 
   it("gives every dancer its own icons", () => {

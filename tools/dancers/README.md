@@ -9,6 +9,8 @@ second, morphed at 60 fps, in a 500×800 frame.
 - `zep` — traced from a 3-second Zep dance clip with `trace.py`.
 - `chad` and `milan` — two routines by one dancer, traced with `trace_look.py`:
   `chad` drawn as he is, `milan` dressed in a striped jersey and baggy trousers.
+- `satin` — traced with `trace_look.py` from another clip, drawn as he is: red
+  satin shirt, red trousers, sunglasses and a grey beard.
 
 ## Adding one from a video
 
@@ -37,7 +39,9 @@ you have the right to use.
 (hair, face, top, sleeves, bare arms, bottoms, bare legs, shoes) and lets a
 *look* recombine and recolour them, with drawn extras where the clip has none:
 long hair, a hat, a crop top, a chest print, knee boots, jersey stripes, baggy
-trousers. Looks are defined in `LOOKS` at the top of the file:
+trousers, a beard, sunglasses, an open collar. A look can also keep stray
+furniture out (`reach`), find hands wherever they rest (`hands`), and treat a
+dark box edited over the clip as trousers (`patch`). Looks are defined in `LOOKS` at the top of the file:
 
     python trace_look.py LOOK clip.mp4 pose.json new-dance.json [FIRST LAST]
 
@@ -50,3 +54,4 @@ Each is reproduced byte for byte from its clip:
 - `zep-dance.json`: `trace.py`, FIRST=4, LAST=94
 - `chad-dance.json`: `trace_look.py chad`, FIRST=3, LAST=93
 - `milan-dance.json`: `trace_look.py milan`, FIRST=1, LAST=91
+- `satin-dance.json`: `trace_look.py satin`, FIRST=1, LAST=91 (the liveliest 3 seconds, picked automatically)

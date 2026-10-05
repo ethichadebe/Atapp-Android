@@ -36,6 +36,23 @@ LOOKS = {
             "shoeL": ("#e9edf0", 4, 16), "shoeR": ("#e9edf0", 4, 16),
         },
     },
+    # The dancer in the clip, as he is: red satin shirt open at the collar, red
+    # trousers, black shoes, sunglasses and a grey beard.
+    "satin": {
+        "hair": "raw", "beard": True, "shades": True, "collar": True,
+        "reach": 0.55, "hands": True, "patch": True,
+        "layers": {
+            "sleeveL": ("#d42a3e", 4, 22), "sleeveR": ("#d42a3e", 4, 22),
+            "armL": ("#6b4330", 4, 22), "armR": ("#6b4330", 4, 22),
+            "shades": ("#111014", 0, 24),
+            "beard": ("#dcd8d0", 4, 28),
+            "hair": ("#45413e", 0, 26), "face": ("#6b4330", 5, 26),
+            "collar": ("#6b4330", 0, 12),
+            "top": ("#d42a3e", 4, 34),
+            "bottomL": ("#b81f30", 4, 24), "bottomR": ("#b81f30", 4, 24),
+            "shoeL": ("#141216", 4, 16), "shoeR": ("#141216", 4, 16),
+        },
+    },
     # Red-and-black striped football jersey, baggy black trousers, silver sneakers.
     "milan": {
         "hair": "raw", "stripes": 4, "baggy": True,
@@ -97,6 +114,14 @@ def parts_for(img, P):
     h, w = img.shape[:2]
     cls = np.squeeze(seg.segment(mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(img, cv2.COLOR_BGR2RGB))).category_mask.numpy_view())
     cls = cv2.medianBlur(cls.astype(np.uint8), 5)
+    if look.get("patch"):
+        # A dark box edited over the clip: on the legs, between hips and knees,
+        # anything near black is taken to be trouser.
+        y0, y1 = int(min(P[23][1], P[24][1])), int(max(P[25][1], P[26][1]))
+        x0, x1 = int(min(P[23][0], P[24][0], P[25][0], P[26][0])) - 10, int(max(P[23][0], P[24][0], P[25][0], P[26][0])) + 10
+        y0, x0 = max(y0, 0), max(x0, 0)
+        box = cls[y0:y1, x0:x1]
+        box[img[y0:y1, x0:x1].max(axis=2) < 75] = 4
     ys, xs = np.nonzero(cls > 0)
     px = np.stack([xs, ys], 1).astype(float)
     c = cls[ys, xs]
@@ -119,6 +144,10 @@ def parts_for(img, P):
     near_foot = np.minimum(poly_dist(px, [anL, ftL]), poly_dist(px, [anR, ftR])) < torso_w * 0.35
 
     label = np.full(len(px), "", object)
+    if look.get("hands"):
+        # Skin by a wrist is a hand, wherever it is (on a thigh, in a pocket).
+        d_hand = {s_: np.min([np.linalg.norm(px - P[j], axis=1) for j in js], axis=0)
+                  for s_, js in (("L", (16, 18, 20, 22)), ("R", (15, 17, 19, 21)))}
     label[c == 1] = "hair"
     label[c == 3] = "face"
     skin = c == 2
@@ -142,6 +171,19 @@ def parts_for(img, P):
     core_px = core & ~top
     bot = cl & ~top
     label[bot] = np.char.add("bottom", leg_side[bot].astype(str))
+    if look.get("hands"):
+        for s_ in "LR":
+            other = "R" if s_ == "L" else "L"
+            hand = skin & (d_hand[s_] < torso_w * 0.4) & (d_hand[s_] <= d_hand[other])
+            label[hand] = "arm" + s_
+    if look.get("reach"):
+        # Drop what is far from every limb and the torso: furniture and plants
+        # the segmenter took for the dancer.
+        far = np.min(np.stack([d_arm["L"], d_arm["R"], d_torso, d_leg["L"], d_leg["R"]], 1), 1) > torso_w * look["reach"]
+        label[far & (c != 1) & (c != 3)] = ""
+        # Sleeves hug the arm.
+        for s_ in "LR":
+            label[(label == "sleeve" + s_) & (d_arm[s_] > torso_w * 0.3)] = ""
 
     base = {}
     core_m = np.zeros((h, w), np.uint8)
@@ -154,6 +196,13 @@ def parts_for(img, P):
         if part == "top":
             m = cv2.bitwise_or(m, core_m)
         base[part] = soften(m)
+    if look.get("hands"):
+        # A hand resting on a thigh leaves no hole in the trousers under it.
+        for s_ in "LR":
+            sel = ((label == "armL") | (label == "armR")) & (d_leg[s_] < torso_w * 0.3) & (along > 0.9)
+            m = base["bottom" + s_].copy()
+            m[ys[sel], xs[sel]] = 255
+            base["bottom" + s_] = soften(m)
 
     face_m = base["face"]
     fy, fx = np.nonzero(face_m)
@@ -232,6 +281,45 @@ def parts_for(img, P):
             m = cv2.bitwise_or(base["bottom" + s], base["leg" + s])
             m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, np.ones((15, 15), np.uint8))
             out["bottom" + s] = cv2.dilate(m, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13, 13)))
+    # A full beard: the head below the nose. The face becomes the whole head,
+    # and the hair only what is above the brow.
+    if look.get("beard") and face_box is not None:
+        head = cv2.bitwise_or(base["hair"], face_m)
+        eye_y = (P[2][1] + P[5][1]) / 2
+        nose_y = P[0][1]
+        drop = max(nose_y - eye_y, 4)
+        yy, xx = np.nonzero(head)
+        cs_, _ = cv2.findContours(head, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        if cs_:
+            hull = cv2.convexHull(max(cs_, key=cv2.contourArea))
+            out["face"] = cv2.fillPoly(np.zeros_like(head), [hull], 255)
+        bm = np.zeros_like(head)
+        low = yy > nose_y + drop * 0.35
+        bm[yy[low], xx[low]] = 255
+        out["beard"] = soften(bm)
+        hy, hx = np.nonzero(base["hair"])
+        hm = np.zeros_like(head)
+        high = hy < eye_y - drop * 0.7
+        hm[hy[high], hx[high]] = 255
+        out["hair"] = soften(hm)
+    # Sunglasses: two dark lenses and a bridge across the eyes.
+    if look.get("shades"):
+        eL, eR = P[2], P[5]
+        span = max(np.linalg.norm(P[3] - P[6]), 4)
+        ang = float(np.degrees(np.arctan2(eR[1] - eL[1], eR[0] - eL[0])))
+        sm = np.zeros((h, w), np.uint8)
+        for e in (eL, eR):
+            cv2.ellipse(sm, tuple(np.round(e).astype(int)), (max(2, int(span * 0.3)), max(2, int(span * 0.2))), ang, 0, 360, 255, -1)
+        cv2.line(sm, tuple(np.round(eL).astype(int)), tuple(np.round(eR).astype(int)), 255, max(1, int(span * 0.08)))
+        out["shades"] = sm
+    # An open collar: a V of bare chest at the neck of the shirt.
+    if look.get("collar"):
+        base_c = sh + up * torso_w * 0.06
+        apex = sh + (hip - sh) * 0.22
+        tri = np.array([base_c - right * torso_w * 0.14, base_c + right * torso_w * 0.14,
+                        apex + right * torso_w * 0.02, apex - right * torso_w * 0.02])
+        cm = cv2.fillPoly(np.zeros((h, w), np.uint8), [tri.round().astype(np.int32)], 255)
+        out["collar"] = cm
     # Jersey stripes: bands running down the torso, clipped to the shirt.
     if look.get("stripes"):
         k = look["stripes"]
@@ -283,7 +371,7 @@ while True:
         frames[i] = img
     i += 1
 
-ANCHOR_JOINT = {"armL": 12, "armR": 11, "sleeveL": 12, "sleeveR": 11, "legL": 24, "legR": 23,
+ANCHOR_JOINT = {"shades": 2, "beard": 0, "collar": 0, "armL": 12, "armR": 11, "sleeveL": 12, "sleeveR": 11, "legL": 24, "legR": 23,
                 "bottomL": 24, "bottomR": 23, "shoeL": 28, "shoeR": 27, "bootL": 28, "bootR": 27}
 traced = {p: [] for p in LAYERS}
 heights, centres = [], []
