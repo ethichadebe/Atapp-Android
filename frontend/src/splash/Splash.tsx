@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { pickDancer, showDancerIcon } from "./dancers";
 import logoBlack from "./logo-black.png";
 import logoWhite from "./logo-white.png";
 
 // The Android app's opening screen (SplashScreenActivity and
 // res/layout/activity_splash_screen.xml): a pale card zooming in from twice its
-// size, "ATAPP" stacked down its left in Lilita One, the dancing figure
-// (res/raw/snoop_dance.json) beside it, and the logo at the foot of the screen.
+// size, "ATAPP" stacked down its left in Lilita One, a dancer beside it (picked
+// at random each visit, see dancers.ts), and the logo at the foot of the screen.
 //
 // It stays until the dance has played once *and* the day's artwork has
 // arrived, as the Android one stayed until its scrape finished. A tap skips it.
@@ -19,7 +20,12 @@ function prefersReducedMotion(): boolean {
 
 export function Splash({ ready, onDone }: { ready: boolean; onDone: () => void }) {
   const stage = useRef<HTMLDivElement>(null);
+  const [dancer] = useState(() => pickDancer());
   const [danced, setDanced] = useState(false);
+
+  // The tab (and, for anyone adding the site to their home screen, the app
+  // icon) shows the face of whoever is dancing.
+  useEffect(() => showDancerIcon(dancer), [dancer]);
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
@@ -30,10 +36,10 @@ export function Splash({ ready, onDone }: { ready: boolean; onDone: () => void }
     let cancelled = false;
 
     // Loaded on the side, in parallel with the day's artwork, so the player and
-    // the dance (about 70 KB gzipped together) never hold up the page itself.
+    // the dance (50 to 100 KB gzipped together) never hold up the page itself.
     // The light build has the SVG renderer only and no expression support, so
     // no eval(): the page's content security policy stays as strict as it is.
-    Promise.all([import("lottie-web/build/player/lottie_light"), import("./snoop-dance.json")])
+    Promise.all([import("lottie-web/build/player/lottie_light"), dancer.load()])
       .then(([{ default: lottie }, { default: dance }]) => {
         if (cancelled) return;
         const a = lottie.loadAnimation({
@@ -46,8 +52,8 @@ export function Splash({ ready, onDone }: { ready: boolean; onDone: () => void }
         });
         anim = a;
         if (still) {
-          // No dancing for people who asked for less motion: show him
-          // standing, and do not hold them on this screen.
+          // No dancing for people who asked for less motion: show the
+          // dancer standing, and do not hold them on this screen.
           a.goToAndStop(0, true);
           setDanced(true);
         } else {
@@ -61,7 +67,7 @@ export function Splash({ ready, onDone }: { ready: boolean; onDone: () => void }
       cancelled = true;
       anim?.destroy();
     };
-  }, []);
+  }, [dancer]);
 
   useEffect(() => {
     if (!leaving && danced && ready) setLeaving(true);
