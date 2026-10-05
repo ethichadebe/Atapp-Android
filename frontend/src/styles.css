@@ -377,3 +377,89 @@ dd {
     margin: 0;
   }
 }
+
+/* ── Opening screen (the Android app's splash) ──────────────────────────── */
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  transition: opacity 0.4s ease;
+}
+
+.splash.leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.splash-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: min(300px, 80vw);
+  aspect-ratio: 300 / 360;
+  border-radius: 20px;
+  background: #ececaa;
+  animation: splash-zoom 3s ease-out both;
+}
+
+/* The dancer stands taller than the card, as on Android (200×400 on 300×360). */
+.splash-dancer {
+  position: absolute;
+  right: 11%;
+  top: 50%;
+  width: 66%;
+  aspect-ratio: 500 / 800;
+  transform: translateY(-50%);
+}
+
+.splash-letters {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 34%;
+  font-family: var(--display);
+  font-size: clamp(2rem, 11vw, 3rem);
+  line-height: 1.15;
+  color: #84bafe;
+}
+
+.splash-logo {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom) + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.splash-logo img {
+  display: block;
+}
+
+@keyframes splash-zoom {
+  from {
+    transform: scale(2);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .splash {
+    background: #000;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-card {
+    animation: none;
+  }
+
+  .splash {
+    transition: none;
+  }
+}
