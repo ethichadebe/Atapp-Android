@@ -1,37 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { contrast, parseHex, themeFor } from "./colours";
+import { FALLBACK, contrast, parseHex, themeFor } from "./colours";
 
 const ratio = (a: string, b: string) => contrast(parseHex(a)!, parseHex(b)!);
 
-const samples = [
-  { vibrant: "#c81e1e", muted: "#6e737d" },
-  { vibrant: "#ffee00", muted: "#f0f0e0" }, // pale, bright — the hard case on white
-  { vibrant: "#101060", muted: "#202020" }, // dark — the hard case on black
-  null,
-];
-
 describe("themeFor", () => {
-  for (const dark of [false, true]) {
-    for (const colours of samples) {
-      it(`keeps text readable (${dark ? "dark" : "light"}, ${colours?.muted ?? "no colours"})`, () => {
-        const t = themeFor(colours, dark);
-        expect(ratio(t.text, t.background)).toBeGreaterThanOrEqual(7);
-        expect(ratio(t.accent, t.background)).toBeGreaterThanOrEqual(3);
-      });
-    }
-  }
-
-  it("is dark in dark mode and light in light mode", () => {
-    const c = { vibrant: "#c81e1e", muted: "#6e737d" };
-    expect(ratio(themeFor(c, true).background, "#000000")).toBeLessThan(ratio(themeFor(c, false).background, "#000000"));
+  it("uses the artwork's darkest and brightest exactly, as the native app did", () => {
+    const c = { dark: "#4d3d38", light: "#e4dc8c" };
+    expect(themeFor(c, true)).toEqual({ background: "#4d3d38", text: "#e4dc8c" });
+    expect(themeFor(c, false)).toEqual({ background: "#e4dc8c", text: "#4d3d38" });
   });
 
-  it("takes its tint from the artwork", () => {
-    const red = themeFor({ vibrant: "#c81e1e", muted: "#a05050" }, false).background;
-    const blue = themeFor({ vibrant: "#1e1ec8", muted: "#5050a0" }, false).background;
-    const [r1, , b1] = parseHex(red)!;
-    const [r2, , b2] = parseHex(blue)!;
-    expect(r1).toBeGreaterThan(b1);
-    expect(b2).toBeGreaterThan(r2);
+  it("only nudges the text, never the background, when the pair is too close", () => {
+    const close = { dark: "#5a5a5a", light: "#8a8a8a" };
+    for (const darkMode of [true, false]) {
+      const t = themeFor(close, darkMode);
+      expect(t.background).toBe(darkMode ? "#5a5a5a" : "#8a8a8a");
+      expect(ratio(t.text, t.background)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("falls back to the native screen's brown and yellow", () => {
+    expect(themeFor(null, true)).toEqual({ background: FALLBACK.dark, text: FALLBACK.light });
+  });
+
+  it("is always readable", () => {
+    const samples = [
+      { dark: "#000000", light: "#ffffff" },
+      { dark: "#101060", light: "#202070" },
+      { dark: "#f0f0e0", light: "#ffffff" },
+      { dark: "#3a2f2a", light: "#e8dfa0" },
+    ];
+    for (const s of samples) {
+      for (const darkMode of [true, false]) {
+        const t = themeFor(s, darkMode);
+        expect(ratio(t.text, t.background)).toBeGreaterThanOrEqual(4.5);
+      }
+    }
   });
 });

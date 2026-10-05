@@ -29,6 +29,18 @@ function score(day: string, objectId: number): string {
   return createHash("sha256").update(`atapp:${day}:${objectId}`).digest("hex");
 }
 
+/**
+ * The day's `n` artworks: the lowest `n` scores, best first. Position 0 is
+ * the same piece `pickObjectId` chooses.
+ */
+export function pickObjectIds(day: string, objectIds: Iterable<number>, n: number): number[] {
+  return [...objectIds]
+    .map((id) => ({ id, s: score(day, id) }))
+    .sort((a, b) => (a.s < b.s ? -1 : a.s > b.s ? 1 : a.id - b.id))
+    .slice(0, n)
+    .map((x) => x.id);
+}
+
 /** The winning objectId for `day`, or null when there is nothing to pick from. */
 export function pickObjectId(day: string, objectIds: Iterable<number>): number | null {
   let best: number | null = null;
@@ -62,6 +74,32 @@ export async function pickForDay(db: PrismaClient, day: string) {
   await db.dailyPick.createMany({ data: [{ day: date, objectId }], skipDuplicates: true });
   const stored = await db.dailyPick.findUniqueOrThrow({ where: { day: date }, include: { artwork: true } });
   return stored.artwork;
+}
+
+export const SET_SIZE = 10;
+
+/**
+ * The day's set of artworks, computing and pinning it if nobody has asked
+ * yet. Starts with the day's art of the day (pinned first if need be), so
+ * the slider and /artworks/today always agree. Empty only before the first
+ * import.
+ */
+export async function setForDay(db: PrismaClient, day: string, size = SET_SIZE) {
+  const date = new Date(`${day}T00:00:00Z`);
+  const pinned = await db.dailySetItem.findMany({ where: { day: date }, orderBy: { position: "asc" }, include: { artwork: true } });
+  if (pinned.length > 0) return pinned.map((p) => p.artwork);
+
+  const first = await pickForDay(db, day);
+  if (!first) return [];
+  const rows = await db.artwork.findMany({ where: { removedAt: null }, select: { objectId: true } });
+  const rest = pickObjectIds(day, rows.map((r) => r.objectId).filter((id) => id !== first.objectId), size - 1);
+  const ids = [first.objectId, ...rest];
+  await db.dailySetItem.createMany({
+    data: ids.map((objectId, position) => ({ day: date, position, objectId })),
+    skipDuplicates: true,
+  });
+  const stored = await db.dailySetItem.findMany({ where: { day: date }, orderBy: { position: "asc" }, include: { artwork: true } });
+  return stored.map((p) => p.artwork);
 }
 
 /** Days already pinned, newest first, up to and including `today`. */

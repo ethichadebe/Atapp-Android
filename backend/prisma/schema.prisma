@@ -45,10 +45,15 @@ model Artwork {
   // app. Filled lazily the first time the artwork is served, as "#rrggbb".
   vibrant        String?
   muted          String?
+  // The darkest and brightest of its main colours, as "#rrggbb": the page's
+  // background and text, the pair the Android app used. Filled lazily too.
+  darkColour     String?   @map("dark_colour")
+  lightColour    String?   @map("light_colour")
   importedAt     DateTime  @map("imported_at")
   removedAt      DateTime? @map("removed_at")
 
-  picks DailyPick[]
+  picks    DailyPick[]
+  setItems DailySetItem[]
 
   @@index([removedAt])
   @@map("artworks")
@@ -66,6 +71,22 @@ model DailyPick {
   artwork Artwork @relation(fields: [objectId], references: [objectId])
 
   @@map("daily_picks")
+}
+
+// The day's 10 artworks, the slider at the top of the page. Chosen the same way
+// as the art of the day — a pure function of the date, so everyone sees the
+// same 10 — and pinned the first time anyone asks, so a dataset refresh later
+// that day can't reshuffle them. Position 0 is the art of the day itself.
+model DailySetItem {
+  day       DateTime @db.Date
+  position  Int
+  objectId  Int      @map("object_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  artwork Artwork @relation(fields: [objectId], references: [objectId])
+
+  @@id([day, position])
+  @@map("daily_set_items")
 }
 
 // One run of the importer, kept so it is visible when the data last moved.

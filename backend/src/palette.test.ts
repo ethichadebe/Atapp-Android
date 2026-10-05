@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import jpeg from "jpeg-js";
-import { fetchPalette, paletteFromPixels } from "./palette.js";
+import { fetchPalette, luminance, paletteFromPixels } from "./palette.js";
 
 type Rgb = [number, number, number];
 
@@ -39,6 +39,38 @@ describe("palette", () => {
     const p = paletteFromPixels(px, 40, 40)!;
     expect(hue(p.vibrant)).toBe("red");
     expect(hue(p.muted)).toBe("grey");
+  });
+
+  it("takes the darkest and brightest main colours for the page", () => {
+    const px = bands(40, 40, [
+      { rgb: [60, 40, 30], share: 0.3 }, // dark brown
+      { rgb: [120, 110, 90], share: 0.4 }, // mid
+      { rgb: [225, 215, 160], share: 0.3 }, // pale yellow
+    ]);
+    const p = paletteFromPixels(px, 40, 40)!;
+    expect(p.dark).toMatch(/^#3[0-9a-f]2[0-9a-f]1[0-9a-f]$/);
+    expect(p.light).toMatch(/^#e[0-9a-f]d[0-9a-f]a[0-9a-f]$/);
+  });
+
+  it("pushes a print's paper tones apart until they read, keeping their hue", () => {
+    const px = bands(40, 40, [
+      { rgb: [197, 187, 164], share: 0.5 }, // paper
+      { rgb: [209, 198, 177], share: 0.5 }, // lighter paper
+    ]);
+    const p = paletteFromPixels(px, 40, 40)!;
+    const lum = (h: string) => luminance({ r: parseInt(h.slice(1, 3), 16), g: parseInt(h.slice(3, 5), 16), b: parseInt(h.slice(5, 7), 16) });
+    expect((lum(p.light) + 0.05) / (lum(p.dark) + 0.05)).toBeGreaterThanOrEqual(4.5);
+    const [r, b] = [1, 5].map((i) => parseInt(p.dark.slice(i, i + 2), 16));
+    expect(r).toBeGreaterThan(b); // still a warm, paper-coloured brown
+  });
+
+  it("ignores a speck of colour outside the main 8", () => {
+    const parts = [
+      { rgb: [250, 30, 30] as Rgb, share: 0.004 }, // a speck: not one of the main colours
+      ...Array.from({ length: 8 }, (_, i) => ({ rgb: [60 + i * 20, 60 + i * 20, 70 + i * 20] as Rgb, share: 0.12 })),
+    ];
+    const p = paletteFromPixels(bands(50, 250, parts), 50, 250)!;
+    expect(hue(p.light)).toBe("grey");
   });
 
   it("still returns two colours for a monochrome print", () => {

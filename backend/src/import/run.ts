@@ -49,6 +49,8 @@ async function upsert(db: PrismaClient, rows: ArtworkRow[], at: Date) {
       classification = EXCLUDED.classification,
       vibrant = CASE WHEN artworks.image_uuid = EXCLUDED.image_uuid THEN artworks.vibrant END,
       muted = CASE WHEN artworks.image_uuid = EXCLUDED.image_uuid THEN artworks.muted END,
+      dark_colour = CASE WHEN artworks.image_uuid = EXCLUDED.image_uuid THEN artworks.dark_colour END,
+      light_colour = CASE WHEN artworks.image_uuid = EXCLUDED.image_uuid THEN artworks.light_colour END,
       image_uuid = EXCLUDED.image_uuid,
       iiif_url = EXCLUDED.iiif_url,
       image_width = EXCLUDED.image_width,

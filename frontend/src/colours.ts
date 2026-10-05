@@ -1,22 +1,23 @@
-// Turning an artwork's two colours into a page theme, the job MainActivity did
-// with setForeGround/setBackground. The old app used the raw swatches, which
-// could leave text unreadable on some artworks; here the background is shifted
-// until body text has at least a 7:1 contrast ratio (WCAG AAA), and the accent
-// until it has 3:1.
+// The page's colours, as the Android app chose them: each artwork's darkest
+// and brightest main colours. In dark mode the background is the darkest and
+// the text the brightest; in light mode the other way round.
+//
+// Those two are far apart on almost every artwork, which is what kept the
+// native app readable. On the rare piece where they are too close, the text
+// is nudged towards white or black — just far enough — and nothing else moves.
 
 export interface Theme {
   background: string;
   text: string;
-  subtle: string;
-  accent: string;
 }
 
 type Rgb = [number, number, number];
 
-const BLACK: Rgb = [0, 0, 0];
-const WHITE: Rgb = [255, 255, 255];
-const INK: Rgb = [17, 17, 17];
-const PAPER: Rgb = [245, 243, 238];
+const MIN_CONTRAST = 4.5; // WCAG AA for body text
+
+// For a piece whose colours haven't been worked out yet: the brown and pale
+// yellow of the native screen recording.
+export const FALLBACK = { dark: "#4d3d38", light: "#e4dc8c" };
 
 export function parseHex(hex: string): Rgb | null {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -46,30 +47,26 @@ export function contrast(a: Rgb, b: Rgb): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-/** Move `c` towards `target` just far enough to reach `ratio` against `against`. */
-function untilContrast(c: Rgb, target: Rgb, against: Rgb, ratio: number): Rgb {
-  for (let t = 0; t <= 1; t += 0.05) {
+/** Move `c` towards `target` only as far as it takes to reach the contrast. */
+function readableAgainst(c: Rgb, background: Rgb, target: Rgb): Rgb {
+  for (let t = 0; t <= 1.0001; t += 0.05) {
     const m = mix(c, target, t);
-    if (contrast(m, against) >= ratio) return m;
+    if (contrast(m, background) >= MIN_CONTRAST) return m;
   }
   return target;
 }
 
-const FALLBACK = { vibrant: "#b0894f", muted: "#6b6660" };
-
-/**
- * Light mode: a pale wash of the muted colour, dark text, vibrant accent.
- * Dark mode: a deep shade of the muted colour, light text, vibrant accent.
- */
-export function themeFor(colours: { vibrant: string; muted: string } | null, dark: boolean): Theme {
-  const muted = parseHex(colours?.muted ?? "") ?? parseHex(FALLBACK.muted)!;
-  const vibrant = parseHex(colours?.vibrant ?? "") ?? parseHex(FALLBACK.vibrant)!;
-  const text = dark ? PAPER : INK;
-  const towards = dark ? BLACK : WHITE;
-
-  const background = untilContrast(mix(muted, towards, dark ? 0.55 : 0.7), towards, text, 7);
-  const accent = untilContrast(vibrant, dark ? WHITE : BLACK, background, 3);
-  const subtle = mix(text, background, 0.3);
-
-  return { background: toHex(background), text: toHex(text), subtle: toHex(subtle), accent: toHex(accent) };
+export function themeFor(colours: { dark: string; light: string } | null, darkMode: boolean): Theme {
+  const dark = parseHex(colours?.dark ?? "") ?? parseHex(FALLBACK.dark)!;
+  const light = parseHex(colours?.light ?? "") ?? parseHex(FALLBACK.light)!;
+  const background = darkMode ? dark : light;
+  let text = darkMode ? light : dark;
+  if (contrast(text, background) < MIN_CONTRAST) {
+    // Towards white in dark mode, black in light — unless the background is
+    // so pale (or so deep) that only the other way can reach contrast.
+    const [first, second]: Rgb[] = darkMode ? [[255, 255, 255], [0, 0, 0]] : [[0, 0, 0], [255, 255, 255]];
+    const nudged = readableAgainst(text, background, first);
+    text = contrast(nudged, background) >= MIN_CONTRAST ? nudged : readableAgainst(text, background, second);
+  }
+  return { background: toHex(background), text: toHex(text) };
 }

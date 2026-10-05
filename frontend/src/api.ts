@@ -18,17 +18,18 @@ export interface Artwork {
     thumbnail: string;
     sizes: { width: number; url: string }[];
   };
-  colours: { vibrant: string; muted: string } | null;
+  /** The darkest and brightest of the artwork's main colours, or null if not worked out yet. */
+  colours: { dark: string; light: string } | null;
 }
 
-export interface Day {
+export interface DailySet {
   date: string;
-  artwork: Artwork;
+  artworks: Artwork[];
 }
 
-export async function fetchRecent(limit = 10, signal?: AbortSignal): Promise<Day[]> {
-  const res = await fetch(`/api/artworks/recent?limit=${limit}`, { signal });
+/** Today's 10, the same for everyone; the first is the art of the day. */
+export async function fetchDaily(signal?: AbortSignal): Promise<DailySet> {
+  const res = await fetch("/api/artworks/daily", { signal });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const body = (await res.json()) as { days: Day[] };
-  return body.days;
+  return (await res.json()) as DailySet;
 }
