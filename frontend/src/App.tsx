@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchDaily, type Artwork } from "./api";
-import { themeFor } from "./colours";
+import { randomTheme, themeFor } from "./colours";
 import { Splash } from "./splash/Splash";
 import { Sheet } from "./sheet/Sheet";
 
@@ -13,8 +13,9 @@ import { Sheet } from "./sheet/Sheet";
 //   - a slider at the top: a translucent pill of 8 px slots, one per artwork,
 //     with an 8 px dot in the text colour that stretches as you swipe
 //     (TabLayout, tabIndicatorAnimationMode="elastic");
-//   - the page background crossfading over 1 s to each artwork's colour
-//     (its TransitionDrawable);
+//   - the page background crossfading over 1 s to each artwork's colours
+//     (its TransitionDrawable): two that contrast, picked at random from the
+//     artwork's main colours every time a page is shown;
 //   - a bottom sheet with the title and artist, dragged up for the rest.
 //
 // Nothing else: no header, no labels. Text is all Lilita One.
@@ -37,7 +38,7 @@ function useDarkMode(): boolean {
 }
 
 function applyTheme(artwork: Artwork | null, dark: boolean) {
-  const t = themeFor(artwork?.colours ?? null, dark);
+  const t = artwork ? randomTheme(artwork.colours, dark) : themeFor(null, dark);
   const root = document.documentElement.style;
   root.setProperty("--bg", t.background);
   root.setProperty("--text", t.text);
@@ -114,8 +115,9 @@ function Gallery({ artworks, dark }: { artworks: Artwork[]; dark: boolean }) {
   const [progress, setProgress] = useState(0); // 0 .. n-1, fractional while swiping
   const active = Math.min(artworks.length - 1, Math.max(0, Math.round(progress)));
 
-  // The background (and the text) follow the page you're on; the CSS
-  // transition on --bg is the native 1 s crossfade.
+  // The background (and the text) follow the page you're on, with a fresh
+  // random pair each time you land on it; the CSS transition on --bg is the
+  // native 1 s crossfade.
   useEffect(() => applyTheme(artworks[active], dark), [artworks, active, dark]);
 
   const onScroll = useCallback(() => {

@@ -21,7 +21,7 @@ const collection = (ids: number[]) =>
 let paletteCalls = 0;
 const fakePalette = async (): Promise<Palette> => {
   paletteCalls++;
-  return { vibrant: "#c81e1e", muted: "#6e737d", dark: "#3a2f2a", light: "#e8dfa0" };
+  return { vibrant: "#c81e1e", muted: "#6e737d", dark: "#3a2f2a", light: "#e8dfa0", main: ["#3a2f2a", "#c81e1e", "#e8dfa0"] };
 };
 
 async function app(now = "2026-10-04T12:00:00Z", palette = fakePalette) {
@@ -52,7 +52,7 @@ describe("GET /artworks/today", () => {
       artist: "Mary Cassatt",
       description: `Picture ${morning.artwork.objectId}`,
       link: `https://www.nga.gov/collection/art-object-page.${morning.artwork.objectId}.html`,
-      colours: { dark: "#3a2f2a", light: "#e8dfa0" },
+      colours: { dark: "#3a2f2a", light: "#e8dfa0", palette: ["#3a2f2a", "#c81e1e", "#e8dfa0"] },
     });
     expect(morning.artwork.image.sizes[0].url).toBe(
       `https://api.nga.gov/iiif/img-${morning.artwork.objectId}/full/!480,480/0/default.jpg`,
@@ -65,6 +65,15 @@ describe("GET /artworks/today", () => {
     await (await app()).inject("/artworks/today");
     await (await app()).inject("/artworks/today");
     expect(paletteCalls).toBe(1);
+  });
+
+  it("works out the main colours of an artwork coloured before they were kept", async () => {
+    await importDataset(db, collection([1]));
+    await db.artwork.updateMany({ data: { vibrant: "#111111", muted: "#222222", darkColour: "#000001", lightColour: "#fffffe" } });
+    paletteCalls = 0;
+    const body = (await (await app()).inject("/artworks/today")).json();
+    expect(paletteCalls).toBe(1);
+    expect(body.artwork.colours.palette).toEqual(["#3a2f2a", "#c81e1e", "#e8dfa0"]);
   });
 
   it("still serves the artwork when its colours cannot be worked out", async () => {
@@ -98,7 +107,7 @@ describe("GET /artworks/daily", () => {
     expect(body.artworks).toHaveLength(10);
     expect(new Set(body.artworks.map((a: { objectId: number }) => a.objectId)).size).toBe(10);
     expect(body.artworks[0].objectId).toBe(today);
-    expect(body.artworks[3].colours).toEqual({ dark: "#3a2f2a", light: "#e8dfa0" });
+    expect(body.artworks[3].colours).toEqual({ dark: "#3a2f2a", light: "#e8dfa0", palette: ["#3a2f2a", "#c81e1e", "#e8dfa0"] });
   });
 
   it("is the same all day, even after the dataset changes", async () => {
@@ -155,7 +164,9 @@ describe("importing", () => {
 
   it("keeps colours unless the image itself changed", async () => {
     await importDataset(db, collection([1, 2]));
-    await db.artwork.updateMany({ data: { vibrant: "#111111", muted: "#222222", darkColour: "#000001", lightColour: "#fffffe" } });
+    await db.artwork.updateMany({
+      data: { vibrant: "#111111", muted: "#222222", darkColour: "#000001", lightColour: "#fffffe", mainColours: "#000001,#fffffe" },
+    });
     await importDataset(
       db,
       source(
@@ -166,8 +177,10 @@ describe("importing", () => {
     const [one, two] = await db.artwork.findMany({ orderBy: { objectId: "asc" } });
     expect(one.vibrant).toBe("#111111");
     expect(one.darkColour).toBe("#000001");
+    expect(one.mainColours).toBe("#000001,#fffffe");
     expect(two.vibrant).toBeNull();
     expect(two.darkColour).toBeNull();
+    expect(two.mainColours).toBeNull();
   });
 
   it("refuses to mark artworks removed when an export looks truncated", async () => {

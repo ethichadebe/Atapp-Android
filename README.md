@@ -31,7 +31,7 @@ This repository holds two versions:
 | `GET /health` | `{"status":"ok"}` |
 | `GET /artworks/today` | `{"date":"YYYY-MM-DD","artwork":{…}}` — `artwork` is `null` until the first import. |
 | `GET /artworks/recent?limit=10` | The days already shown, newest first. |
-| `GET /artworks/daily` | `{"date":"YYYY-MM-DD","artworks":[…]}` — today's 10, the same for everyone all day. The first is the art of the day; each carries `colours: {dark, light}` (its darkest and brightest main colours) for the page background and text. Empty until the first import. |
+| `GET /artworks/daily` | `{"date":"YYYY-MM-DD","artworks":[…]}` — today's 10, the same for everyone all day. The first is the art of the day; each carries `colours: {dark, light, palette}`: `palette` is its distinct main colours, which the app pairs at random for the page background and text on every swipe; `dark` and `light` are its darkest and brightest, made readable. Empty until the first import. |
 
 ### Art of the day
 
