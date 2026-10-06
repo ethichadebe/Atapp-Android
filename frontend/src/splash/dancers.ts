@@ -6,6 +6,8 @@ import chadIcon from "./icons/dancer-chad-32.png";
 import chadTouchIcon from "./icons/dancer-chad-180.png";
 import milanIcon from "./icons/dancer-milan-32.png";
 import milanTouchIcon from "./icons/dancer-milan-180.png";
+import satinIcon from "./icons/dancer-satin-32.png";
+import satinTouchIcon from "./icons/dancer-satin-180.png";
 
 // The dancers the opening screen picks from, one at random per visit.
 //
@@ -15,6 +17,8 @@ import milanTouchIcon from "./icons/dancer-milan-180.png";
 // - chad: traced the same way from a dance clip, drawn as the dancer is.
 // - milan: another routine by the same dancer, dressed in a striped football
 //   jersey and baggy trousers.
+// - satin: traced from another clip, drawn as the dancer is: red satin shirt
+//   open at the collar, red trousers, sunglasses and a grey beard.
 //
 // Each animation loads in its own chunk, only when picked. `icon` is its face
 // at browser-tab size and `touchIcon` at home-screen size: the tab shows whoever
@@ -33,6 +37,7 @@ export const DANCERS: Dancer[] = [
   { id: "zep", load: () => import("./zep-dance.json"), icon: zepIcon, touchIcon: zepTouchIcon },
   { id: "chad", load: () => import("./chad-dance.json"), icon: chadIcon, touchIcon: chadTouchIcon },
   { id: "milan", load: () => import("./milan-dance.json"), icon: milanIcon, touchIcon: milanTouchIcon },
+  { id: "satin", load: () => import("./satin-dance.json"), icon: satinIcon, touchIcon: satinTouchIcon },
 ];
 
 export function pickDancer(random: () => number = Math.random): Dancer {
