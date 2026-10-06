@@ -73,6 +73,28 @@ describe("palette", () => {
     expect(hue(p.light)).toBe("grey");
   });
 
+  it("keeps the main colours exactly, most common first, for the app to pair", () => {
+    const px = bands(40, 100, [
+      { rgb: [200, 30, 30], share: 0.5 },
+      { rgb: [30, 30, 200], share: 0.3 },
+      { rgb: [240, 230, 160], share: 0.2 },
+    ]);
+    const p = paletteFromPixels(px, 40, 100)!;
+    expect(p.main).toEqual(["#c81e1e", "#1e1ec8", "#f0e6a0"]);
+  });
+
+  it("keeps distinct colours, not eight shades of the same paper, and no specks", () => {
+    const px = bands(50, 200, [
+      ...Array.from({ length: 6 }, (_, i) => ({ rgb: [214 + i * 3, 200 + i * 3, 170 + i * 3] as Rgb, share: 0.15 })),
+      { rgb: [90, 70, 50], share: 0.095 }, // the ink
+      { rgb: [30, 90, 200], share: 0.005 }, // a speck
+    ]);
+    const p = paletteFromPixels(px, 50, 200)!;
+    expect(p.main).toHaveLength(2);
+    expect(hue(p.main[1])).toBe("red"); // brown ink, after the paper
+    expect(p.main.some((c) => hue(c) === "blue")).toBe(false);
+  });
+
   it("still returns two colours for a monochrome print", () => {
     const px = bands(20, 20, [
       { rgb: [60, 60, 60], share: 0.5 },

@@ -23,8 +23,13 @@ export interface ArtworkDto {
     thumbnail: string;
     sizes: { width: number; url: string }[];
   };
-  /** The page's two colours: background and text, swapped for dark/light mode. */
-  colours: { dark: string; light: string } | null;
+  /**
+   * The page's colours. `palette` is the artwork's main colours: the app pairs
+   * two that contrast, at random, for each page view. `dark` and `light` are
+   * the darkest and brightest made readable: the pair to fall back on when no
+   * two main colours contrast enough.
+   */
+  colours: { dark: string; light: string; palette: string[] } | null;
 }
 
 const SIZES = [480, 800, 1200, 1800];
@@ -65,7 +70,10 @@ export function toDto(a: Artwork): ArtworkDto {
       thumbnail: iiifImage(a.iiifUrl, 200),
       sizes: sizes.map((width) => ({ width, url: iiifImage(a.iiifUrl, width) })),
     },
-    colours: a.darkColour && a.lightColour ? { dark: a.darkColour, light: a.lightColour } : null,
+    colours:
+      a.darkColour && a.lightColour
+        ? { dark: a.darkColour, light: a.lightColour, palette: a.mainColours ? a.mainColours.split(",") : [] }
+        : null,
   };
 }
 
@@ -84,7 +92,7 @@ export async function ensureColours(
   artwork: Artwork,
   palette: typeof fetchPalette = fetchPalette,
 ): Promise<Artwork> {
-  if (artwork.darkColour && artwork.lightColour) return artwork;
+  if (artwork.darkColour && artwork.lightColour && artwork.mainColours) return artwork;
   const failedAt = lastFailure.get(artwork.objectId);
   if (failedAt !== undefined && Date.now() - failedAt < RETRY_AFTER_MS) return artwork;
   const found = await palette(iiifImage(artwork.iiifUrl, 100));
@@ -95,6 +103,12 @@ export async function ensureColours(
   lastFailure.delete(artwork.objectId);
   return db.artwork.update({
     where: { objectId: artwork.objectId },
-    data: { vibrant: found.vibrant, muted: found.muted, darkColour: found.dark, lightColour: found.light },
+    data: {
+      vibrant: found.vibrant,
+      muted: found.muted,
+      darkColour: found.dark,
+      lightColour: found.light,
+      mainColours: found.main.join(","),
+    },
   });
 }

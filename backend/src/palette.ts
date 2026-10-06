@@ -12,6 +12,8 @@ export interface Palette {
    *  Android app used for the page, so text always reads against background. */
   dark: string;
   light: string;
+  /** The artwork's distinct main colours, most common first, exactly as they are. */
+  main: string[];
 }
 
 // The Android app asked Palette for at most 8 colours and took the darkest
@@ -97,8 +99,8 @@ export function toHex({ r, g, b }: { r: number; g: number; b: number }): string 
   return "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
 }
 
-/** Quantise RGBA pixels into at most MAX_SWATCHES averaged colours. */
-export function swatches(rgba: Uint8Array, width: number, height: number): Swatch[] {
+/** Quantise RGBA pixels into at most `limit` averaged colours. */
+export function swatches(rgba: Uint8Array, width: number, height: number, limit = MAX_SWATCHES): Swatch[] {
   const counts = new Map<number, { r: number; g: number; b: number; n: number }>();
   const pixels = Math.min(width * height, Math.floor(rgba.length / 4));
   for (let i = 0; i < pixels; i++) {
@@ -129,7 +131,25 @@ export function swatches(rgba: Uint8Array, width: number, height: number): Swatc
     // artwork's colour.
     .filter((s) => s.l > 0.05 && s.l < 0.95)
     .sort((a, b) => b.population - a.population)
-    .slice(0, MAX_SWATCHES);
+    .slice(0, limit);
+}
+
+// For the page's random colour pairs: the artwork's distinct colours. The most
+// common first, skipping any too close to one already taken, so a print gives
+// its paper, its ink and its tints rather than eight shades of paper. Specks
+// under MIN_SHARE of the picture are not the artwork's colour.
+const DISTINCT = 40; // RGB distance between two kept colours
+const MIN_SHARE = 0.01;
+
+function distinctColours(rgba: Uint8Array, width: number, height: number): Swatch[] {
+  const all = swatches(rgba, width, height, 512);
+  const total = all.reduce((n, s) => n + s.population, 0);
+  const kept: Swatch[] = [];
+  for (const s of all) {
+    if (kept.length === MAIN_COLOURS || s.population < total * MIN_SHARE) break;
+    if (kept.every((k) => Math.hypot(k.r - s.r, k.g - s.g, k.b - s.b) >= DISTINCT)) kept.push(s);
+  }
+  return kept;
 }
 
 function best(all: Swatch[], t: Target, exclude?: Swatch): Swatch | undefined {
@@ -161,9 +181,16 @@ export function paletteFromPixels(rgba: Uint8Array, width: number, height: numbe
   const bySaturation = [...all].sort((a, b) => b.s - a.s);
   const vibrant = best(all, VIBRANT) ?? bySaturation[0];
   const muted = best(all, MUTED, vibrant) ?? bySaturation[bySaturation.length - 1];
-  const main = all.slice(0, MAIN_COLOURS).sort((a, b) => luminance(a) - luminance(b));
+  const top = all.slice(0, MAIN_COLOURS);
+  const main = [...top].sort((a, b) => luminance(a) - luminance(b));
   const [dark, light] = readablePair(main[0], main[main.length - 1]);
-  return { vibrant: toHex(vibrant), muted: toHex(muted), dark: toHex(dark), light: toHex(light) };
+  return {
+    vibrant: toHex(vibrant),
+    muted: toHex(muted),
+    dark: toHex(dark),
+    light: toHex(light),
+    main: distinctColours(rgba, width, height).map(toHex),
+  };
 }
 
 /**

@@ -18,8 +18,11 @@ export interface Artwork {
     thumbnail: string;
     sizes: { width: number; url: string }[];
   };
-  /** The darkest and brightest of the artwork's main colours, or null if not worked out yet. */
-  colours: { dark: string; light: string } | null;
+  /**
+   * The artwork's main colours (`palette`), and its darkest and brightest made
+   * readable (`dark`, `light`) to fall back on. Null if not worked out yet.
+   */
+  colours: { dark: string; light: string; palette?: string[] } | null;
 }
 
 export interface DailySet {

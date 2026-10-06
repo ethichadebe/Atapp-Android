@@ -49,6 +49,9 @@ model Artwork {
   // background and text, the pair the Android app used. Filled lazily too.
   darkColour     String?   @map("dark_colour")
   lightColour    String?   @map("light_colour")
+  // The artwork's 8 main colours, most common first, as "#rrggbb,#rrggbb,…".
+  // The app pairs two of them at random for each page view. Filled lazily too.
+  mainColours    String?   @map("main_colours")
   importedAt     DateTime  @map("imported_at")
   removedAt      DateTime? @map("removed_at")
 
