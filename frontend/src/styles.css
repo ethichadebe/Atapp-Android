@@ -202,19 +202,23 @@ a {
   line-height: 1.2;
 }
 
-/* The story and its footer sit together under the title; any spare height is
-   left at the bottom of the sheet. A long story scrolls. */
+/* The story takes all the room between the title and the footer, which stays
+   at the bottom, and sits in the middle of it with at least 24 px above and
+   below. A story longer than the room scrolls, from its first line. */
 .sheet-body {
-  flex: 0 1 auto;
+  flex: 1;
   min-height: 0;
-  /* Tighter than the native 60/50 dp, so the story sits close to its title. */
-  margin: 20px 10px 16px;
+  display: flex;
+  flex-direction: column;
+  margin: 24px 10px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .sheet-description {
-  margin: 0;
+  /* Auto margins centre it while it fits, and fall to 0 when it overflows,
+     so the top is never cut off. */
+  margin: auto 0;
   font-size: 22px;
   line-height: 1.2;
   text-align: center;
