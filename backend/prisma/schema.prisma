@@ -57,6 +57,7 @@ model Artwork {
 
   picks    DailyPick[]
   setItems DailySetItem[]
+  story    ArtworkStory?
 
   @@index([removedAt])
   @@map("artworks")
@@ -103,4 +104,23 @@ model DatasetImport {
   error      String?
 
   @@map("dataset_imports")
+}
+
+// The story behind an artwork: researched on the web by Claude and written in
+// 60–90 words, with the pages it drew on. One row per artwork once research
+// has been tried; `story` stays null until it succeeds. Research is retried a
+// few times, hours apart, and the row doubles as the claim that stops two
+// servers researching the same artwork at once.
+model ArtworkStory {
+  objectId    Int       @id @map("object_id")
+  story       String?
+  /// [{ title, url }]
+  sources     Json?
+  model       String?
+  attempts    Int       @default(0)
+  attemptedAt DateTime  @map("attempted_at")
+  writtenAt   DateTime? @map("written_at")
+  artwork     Artwork   @relation(fields: [objectId], references: [objectId])
+
+  @@map("artwork_stories")
 }

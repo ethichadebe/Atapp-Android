@@ -202,16 +202,23 @@ a {
   line-height: 1.2;
 }
 
+/* The story takes all the room between the title and the footer, which stays
+   at the bottom, and sits in the middle of it with at least 24 px above and
+   below. A story longer than the room scrolls, from its first line. */
 .sheet-body {
   flex: 1;
   min-height: 0;
-  margin: 60px 10px 50px;
+  display: flex;
+  flex-direction: column;
+  margin: 24px 10px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .sheet-description {
-  margin: 0;
+  /* Auto margins centre it while it fits, and fall to 0 when it overflows,
+     so the top is never cut off. */
+  margin: auto 0;
   font-size: 22px;
   line-height: 1.2;
   text-align: center;
@@ -232,10 +239,36 @@ a {
   text-decoration: none;
 }
 
-.sheet-credit {
+.sheet-credit,
+.sheet-ai {
   font-family: system-ui, sans-serif;
   font-size: 10px;
   opacity: 0.75;
+}
+
+/* "Story researched with AI · Sources": as quiet as the credit under it. The
+   sources open above it, a short list of links. */
+.sheet-ai-toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sheet-sources {
+  max-height: 30vh;
+  overflow-y: auto;
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+  line-height: 1.6;
+}
+
+.sheet-foot .sheet-sources a {
+  font-size: 10px;
+  text-decoration: underline;
 }
 
 /* Wide screens: the same app, in a phone-width column. */

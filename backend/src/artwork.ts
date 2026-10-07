@@ -1,5 +1,6 @@
 import type { Artwork, PrismaClient } from "@prisma/client";
 import { fetchPalette } from "./palette.js";
+import type { StoryDto } from "./stories.js";
 
 // What the API sends for one artwork. Images are hotlinked from NGA's IIIF
 // image server, which renders any size on request, so the browser can pick a
@@ -30,6 +31,12 @@ export interface ArtworkDto {
    * two main colours contrast enough.
    */
   colours: { dark: string; light: string; palette: string[] } | null;
+  /**
+   * The story behind the artwork, researched on the web with AI, and the pages
+   * it drew on. Null until it has been written; the app shows `description`
+   * meanwhile.
+   */
+  story: StoryDto | null;
 }
 
 const SIZES = [480, 800, 1200, 1800];
@@ -48,7 +55,7 @@ export function ngaLink(objectId: number): string {
   return `https://www.nga.gov/collection/art-object-page.${objectId}.html`;
 }
 
-export function toDto(a: Artwork): ArtworkDto {
+export function toDto(a: Artwork, story: StoryDto | null = null): ArtworkDto {
   const longest = Math.max(a.imageWidth ?? 0, a.imageHeight ?? 0);
   // Never ask for a rendition larger than the scan itself.
   const sizes = SIZES.filter((s, i) => longest === 0 || s <= longest || i === 0);
@@ -74,6 +81,7 @@ export function toDto(a: Artwork): ArtworkDto {
       a.darkColour && a.lightColour
         ? { dark: a.darkColour, light: a.lightColour, palette: a.mainColours ? a.mainColours.split(",") : [] }
         : null,
+    story,
   };
 }
 

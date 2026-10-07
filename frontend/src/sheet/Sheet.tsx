@@ -29,6 +29,8 @@ function usePeek(): number {
 export function Sheet({ artwork }: { artwork: Artwork }) {
   const peek = usePeek();
   const [open, setOpen] = useState(false);
+  const [showSources, setShowSources] = useState(false);
+  useEffect(() => setShowSources(false), [artwork.objectId]);
   const [drag, setDrag] = useState<number | null>(null); // translateY while dragging
   const start = useRef<{ y: number; from: number; t: number; moved: boolean } | null>(null);
   const arrowBox = useRef<HTMLDivElement>(null);
@@ -90,7 +92,9 @@ export function Sheet({ artwork }: { artwork: Artwork }) {
   };
 
   const y = drag ?? (open ? 0 : closedY());
-  const description = [artwork.description, artwork.creditLine ? `Credit: ${artwork.creditLine}` : null]
+  // The researched story when there is one; NGA's description until then.
+  const story = artwork.story ?? null;
+  const description = [story?.text ?? artwork.description, artwork.creditLine ? `Credit: ${artwork.creditLine}` : null]
     .filter(Boolean)
     .join("\n\n");
 
@@ -102,9 +106,9 @@ export function Sheet({ artwork }: { artwork: Artwork }) {
     >
       <button
         className="sheet-head"
-        // The head fills the peek, so the collapsed sheet shows only the
-        // arrow, title and artist; the description starts below the fold.
-        style={{ minHeight: peek }}
+        // Closed, the head fills the peek, so the collapsed sheet shows only
+        // the arrow, title and artist; open, the story follows right after.
+        style={{ minHeight: open && drag === null ? undefined : peek }}
         aria-expanded={open}
         aria-label={open ? "Hide the details" : "Show the details"}
         onPointerDown={onDown}
@@ -132,6 +136,33 @@ export function Sheet({ artwork }: { artwork: Artwork }) {
         <a href={artwork.link} target="_blank" rel="noopener noreferrer" tabIndex={open ? 0 : -1}>
           Read more on <u>NGA.gov</u>
         </a>
+        {story && (
+          <div className="sheet-ai">
+            {showSources && (
+              <ul className="sheet-sources" id="sheet-sources">
+                {story.sources.map((s) => (
+                  <li key={s.url}>
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" tabIndex={open ? 0 : -1}>
+                      {s.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <span>
+              Story researched with AI ·{" "}
+              <button
+                className="sheet-ai-toggle"
+                aria-expanded={showSources}
+                aria-controls="sheet-sources"
+                tabIndex={open ? 0 : -1}
+                onClick={() => setShowSources((v) => !v)}
+              >
+                {showSources ? "Hide sources" : "Sources"}
+              </button>
+            </span>
+          </div>
+        )}
         <span className="sheet-credit">
           Courtesy National Gallery of Art, Washington · open access (CC0). Atapp is not affiliated with or endorsed by the
           National Gallery of Art.
