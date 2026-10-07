@@ -31,7 +31,7 @@ This repository holds two versions:
 | `GET /health` | `{"status":"ok"}` |
 | `GET /artworks/today` | `{"date":"YYYY-MM-DD","artwork":{…}}` — `artwork` is `null` until the first import. |
 | `GET /artworks/recent?limit=10` | The days already shown, newest first. |
-| `GET /artworks/daily` | `{"date":"YYYY-MM-DD","artworks":[…]}` — today's 10, the same for everyone all day. The first is the art of the day; each carries `colours: {dark, light, palette}`: `palette` is its distinct main colours, which the app pairs at random for the page background and text on every swipe; `dark` and `light` are its darkest and brightest, made readable. Empty until the first import. |
+| `GET /artworks/daily` | `{"date":"YYYY-MM-DD","artworks":[…]}` — today's 10, the same for everyone all day. The first is the art of the day; each carries `colours: {dark, light, palette}`: `palette` is its distinct main colours, which the app pairs at random for the page background and text on every swipe; `dark` and `light` are its darkest and brightest, made readable. Each also carries `story: {text, sources}` once its story is researched (see below), else `null`. Empty until the first import. |
 
 ### Art of the day
 
@@ -88,6 +88,30 @@ by hand, later. `backend/src/migrations.test.ts` applies the deploy's own check.
 
 Server values live in `.env` beside `docker-compose.prod.yml` on the server;
 `.env.example` lists them. Never commit a server address, IP or key.
+
+### Stories
+
+NGA's descriptions say what a picture shows. With an Anthropic API key set
+(`ANTHROPIC_API_KEY` in the server's `.env`), the backend also researches the
+story behind each of the day's artworks on the web with Claude Opus 5.5
+(`backend/src/research.ts`): who made it, when, why, and what it meant, in
+60–90 words drawn only from the pages it cites. The app shows the story in
+place of NGA's description, with a quiet "Story researched with AI · Sources"
+line above the credit.
+
+Research runs in the background (`backend/src/stories.ts`): at startup, every
+30 minutes, and when an artwork is served without a story. Nobody waits for it;
+NGA's description shows until the story is written. Each artwork is researched
+once and kept in `artwork_stories`; a failed attempt is retried 6 hours later,
+at most 3 times. Each attempt is logged with its tokens, searches and estimated
+cost: about $0.25 per artwork, so roughly $2.50 a day for 10. Without a key,
+nothing changes.
+
+To try one artwork's story (printed with its sources and cost, not saved):
+
+```bash
+docker compose -f docker-compose.prod.yml run --rm --entrypoint node backend dist/story-cli.js OBJECT_ID
+```
 
 ### Loading and refreshing the collection
 

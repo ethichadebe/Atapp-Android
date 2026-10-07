@@ -36,6 +36,9 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       NODE_ENV: production
+      # Optional: researches the story behind each artwork with Claude. Unset,
+      # the app shows NGA's own descriptions.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

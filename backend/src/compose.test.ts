@@ -42,4 +42,8 @@ describe("docker-compose.prod.yml", () => {
     // compose, so anything the backend needs must be a plain .env value.
     expect(service("backend")).toMatch(/DATABASE_URL: \$\{DATABASE_URL\}/);
   });
+
+  it("passes the optional Anthropic API key from .env, empty when unset", () => {
+    expect(service("backend")).toMatch(/ANTHROPIC_API_KEY: \$\{ANTHROPIC_API_KEY:-\}/);
+  });
 });

@@ -23,6 +23,11 @@ export interface Artwork {
    * readable (`dark`, `light`) to fall back on. Null if not worked out yet.
    */
   colours: { dark: string; light: string; palette?: string[] } | null;
+  /**
+   * The story behind the artwork, researched on the web with AI, and the pages
+   * it drew on. Null until written (or when research is off).
+   */
+  story?: { text: string; sources: { title: string; url: string }[] } | null;
 }
 
 export interface DailySet {

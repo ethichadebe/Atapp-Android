@@ -16,6 +16,7 @@
     "test:db": "vitest run --config vitest.db.config.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
     "@prisma/client": "^6.3.1",
     "csv-parse": "^7.0.3",
     "fastify": "^5.2.1",

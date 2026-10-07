@@ -1,9 +1,10 @@
 import Fastify from "fastify";
-import type { PrismaClient } from "@prisma/client";
+import type { Artwork, PrismaClient } from "@prisma/client";
 import { prisma as defaultDb } from "./db.js";
 import { dayKey, pickForDay, recentPicks, setForDay } from "./dailyPick.js";
 import { ensureColours, toDto } from "./artwork.js";
 import type { fetchPalette } from "./palette.js";
+import { storiesFor, type StoryWriter } from "./stories.js";
 
 // Paths are served without a prefix; the frontend's nginx maps /api/* here.
 // The deploy probes GET /health and GET /artworks/today on the candidate
@@ -14,12 +15,25 @@ export interface AppOptions {
   db?: PrismaClient;
   now?: () => Date;
   palette?: typeof fetchPalette;
+  /** Researches the stories behind artworks as they are served. Off when null. */
+  stories?: StoryWriter | null;
 }
 
 export async function buildApp(opts: AppOptions = {}) {
   const app = Fastify({ logger: opts.logger ?? false });
   const db = opts.db ?? defaultDb;
   const now = opts.now ?? (() => new Date());
+  if (opts.stories) opts.stories.log = app.log;
+
+  // Artworks with their colours and any written stories, ready to send. With
+  // `research`, the ones without a story are queued for it, in the background.
+  async function present(artworks: Artwork[], research = true) {
+    if (research) opts.stories?.queue(artworks).catch((err: unknown) => app.log.warn({ err }, "could not queue stories"));
+    const stories = await storiesFor(db, artworks.map((a) => a.objectId));
+    return Promise.all(
+      artworks.map(async (a) => toDto(await ensureColours(db, a, opts.palette), stories.get(a.objectId) ?? null)),
+    );
+  }
 
   app.get("/health", async () => ({ status: "ok" }));
 
@@ -32,7 +46,7 @@ export async function buildApp(opts: AppOptions = {}) {
     reply.header("Cache-Control", "public, max-age=300");
     return {
       date: day,
-      artwork: artwork ? toDto(await ensureColours(db, artwork, opts.palette)) : null,
+      artwork: artwork ? (await present([artwork]))[0] : null,
     };
   });
 
@@ -44,7 +58,7 @@ export async function buildApp(opts: AppOptions = {}) {
     reply.header("Cache-Control", "public, max-age=300");
     return {
       date: day,
-      artworks: await Promise.all(set.map(async (a) => toDto(await ensureColours(db, a, opts.palette)))),
+      artworks: await present(set),
     };
   });
 
@@ -57,14 +71,9 @@ export async function buildApp(opts: AppOptions = {}) {
     await pickForDay(db, today);
     const picks = await recentPicks(db, today, limit);
     reply.header("Cache-Control", "public, max-age=300");
-    return {
-      days: await Promise.all(
-        picks.map(async (p) => ({
-          date: dayKey(p.day),
-          artwork: toDto(await ensureColours(db, p.artwork, opts.palette)),
-        })),
-      ),
-    };
+    // Past days are not researched from here: only what the app shows is.
+    const artworks = await present(picks.map((p) => p.artwork), false);
+    return { days: picks.map((p, i) => ({ date: dayKey(p.day), artwork: artworks[i] })) };
   });
 
   return app;
