@@ -106,9 +106,9 @@ export function Sheet({ artwork }: { artwork: Artwork }) {
     >
       <button
         className="sheet-head"
-        // The head fills the peek, so the collapsed sheet shows only the
-        // arrow, title and artist; the description starts below the fold.
-        style={{ minHeight: peek }}
+        // Closed, the head fills the peek, so the collapsed sheet shows only
+        // the arrow, title and artist; open, the story follows right after.
+        style={{ minHeight: open && drag === null ? undefined : peek }}
         aria-expanded={open}
         aria-label={open ? "Hide the details" : "Show the details"}
         onPointerDown={onDown}

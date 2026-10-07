@@ -202,10 +202,13 @@ a {
   line-height: 1.2;
 }
 
+/* The story and its footer sit together under the title; any spare height is
+   left at the bottom of the sheet. A long story scrolls. */
 .sheet-body {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
-  margin: 60px 10px 50px;
+  /* Tighter than the native 60/50 dp, so the story sits close to its title. */
+  margin: 20px 10px 16px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
