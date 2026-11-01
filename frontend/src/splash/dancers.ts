@@ -8,6 +8,16 @@ import milanIcon from "./icons/dancer-milan-32.png";
 import milanTouchIcon from "./icons/dancer-milan-180.png";
 import satinIcon from "./icons/dancer-satin-32.png";
 import satinTouchIcon from "./icons/dancer-satin-180.png";
+import afroIcon from "./icons/dancer-afro-32.png";
+import afroTouchIcon from "./icons/dancer-afro-180.png";
+import leatherIcon from "./icons/dancer-leather-32.png";
+import leatherTouchIcon from "./icons/dancer-leather-180.png";
+import studsIcon from "./icons/dancer-studs-32.png";
+import studsTouchIcon from "./icons/dancer-studs-180.png";
+import balaclavaIcon from "./icons/dancer-balaclava-32.png";
+import balaclavaTouchIcon from "./icons/dancer-balaclava-180.png";
+import cargoIcon from "./icons/dancer-cargo-32.png";
+import cargoTouchIcon from "./icons/dancer-cargo-180.png";
 
 // The dancers the opening screen picks from, one at random per visit.
 //
@@ -19,6 +29,12 @@ import satinTouchIcon from "./icons/dancer-satin-180.png";
 //   jersey and baggy trousers.
 // - satin: traced from another clip, drawn as the dancer is: red satin shirt
 //   open at the collar, red trousers, sunglasses and a grey beard.
+// - afro, leather, studs, balaclava, cargo: five routines by one dancer.
+//   afro is drawn as she is (afro, brown tube top, denim mini skirt, heels);
+//   the other four keep her moves in other outfits: a black leather tube top
+//   and maroon cargo trousers; a white studded two-piece, lace-up boots and a
+//   ponytail; a white balaclava, blue tee and shorts; a green work jacket,
+//   cargo trousers and locs.
 //
 // Each animation loads in its own chunk, only when picked. `icon` is its face
 // at browser-tab size and `touchIcon` at home-screen size: the tab shows whoever
@@ -38,6 +54,11 @@ export const DANCERS: Dancer[] = [
   { id: "chad", load: () => import("./chad-dance.json"), icon: chadIcon, touchIcon: chadTouchIcon },
   { id: "milan", load: () => import("./milan-dance.json"), icon: milanIcon, touchIcon: milanTouchIcon },
   { id: "satin", load: () => import("./satin-dance.json"), icon: satinIcon, touchIcon: satinTouchIcon },
+  { id: "afro", load: () => import("./afro-dance.json"), icon: afroIcon, touchIcon: afroTouchIcon },
+  { id: "leather", load: () => import("./leather-dance.json"), icon: leatherIcon, touchIcon: leatherTouchIcon },
+  { id: "studs", load: () => import("./studs-dance.json"), icon: studsIcon, touchIcon: studsTouchIcon },
+  { id: "balaclava", load: () => import("./balaclava-dance.json"), icon: balaclavaIcon, touchIcon: balaclavaTouchIcon },
+  { id: "cargo", load: () => import("./cargo-dance.json"), icon: cargoIcon, touchIcon: cargoTouchIcon },
 ];
 
 export function pickDancer(random: () => number = Math.random): Dancer {
