@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The opening screen's yellow card, behind each dancer's launcher icon. -->
+    <color name="ic_launcher_background">#ECECAA</color>
+    <color name="splash_light">#FFFFFF</color>
+    <color name="widget_scrim">#99000000</color>
+</resources>

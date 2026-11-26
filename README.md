@@ -2,16 +2,18 @@
 
 One artwork from the National Gallery of Art, Washington, every day.
 
-This repository holds two versions:
+This repository holds:
 
-- **Android** — the original app, in `app/` (Gradle, Java). It scrapes nga.gov
-  pages at random and is kept as the reference for what the app does. It is not
-  built or deployed from here.
-- **Web** — `backend/` and `frontend/`, so iPhone users can use it too. It does
-  not scrape anything: it serves the National Gallery's own
+- **Web** — `backend/` and `frontend/`. It serves the National Gallery's own
   [open data](https://github.com/NationalGalleryOfArt/opendata) (CC0) from our
   own database, and hotlinks their open-access images (CC0) from their IIIF
   image server.
+- **Android** — `frontend/android`: the same React app in a native shell
+  (Capacitor), for Google Play, adding what a website can't do: a launcher icon
+  that follows the dancer, a morning notification, a home-screen widget, and
+  today's art kept for offline use. See [frontend/android/README.md](frontend/android/README.md).
+  The original native app (Java, 2022) it replaces is in this repository's
+  history, and in `Atapp.zip`.
 
 ## Web layout
 

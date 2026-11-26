@@ -3,6 +3,7 @@ import { fetchDaily, type Artwork } from "./api";
 import { randomTheme, themeFor } from "./colours";
 import { Splash } from "./splash/Splash";
 import { Sheet } from "./sheet/Sheet";
+import { displayImage } from "./native";
 
 // The main screen, as the Android app's MainActivity drew it
 // (res/layout/activity_main.xml), reproduced from its screen recording:
@@ -186,8 +187,9 @@ function Page({ artwork, scaleY, eager }: { artwork: Artwork; scaleY: number; ea
   return (
     <section className="page" style={{ transform: `scaleY(${scaleY})` }} aria-label={a.title}>
       <PinchImage
-        src={a.image.sizes[Math.min(1, a.image.sizes.length - 1)].url}
-        srcSet={a.image.sizes.map((s) => `${s.url} ${s.width}w`).join(", ")}
+        // In the app, the copy saved on the phone when there is one.
+        src={a.localImage ?? displayImage(a)}
+        srcSet={a.localImage ? undefined : a.image.sizes.map((s) => `${s.url} ${s.width}w`).join(", ")}
         alt={a.image.alt}
         width={a.image.width ?? undefined}
         height={a.image.height ?? undefined}
@@ -201,7 +203,7 @@ function Page({ artwork, scaleY, eager }: { artwork: Artwork; scaleY: number; ea
  * Pinch to zoom, then let go and it springs back — what the native app's
  * Zoomy library did. One finger still swipes between pages.
  */
-function PinchImage(props: { src: string; srcSet: string; alt: string; width?: number; height?: number; eager: boolean }) {
+function PinchImage(props: { src: string; srcSet?: string; alt: string; width?: number; height?: number; eager: boolean }) {
   const img = useRef<HTMLImageElement>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const start = useRef<{ d: number; mx: number; my: number } | null>(null);

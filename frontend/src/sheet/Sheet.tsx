@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { App as NativeApp } from "@capacitor/app";
 import type { Artwork } from "../api";
+import { inApp } from "../native";
 
 // The native app's bottom sheet (rlBottomSheet in activity_main.xml): peeks at
 // a fifth of the screen with the arrow, title and artist, and drags up to fill
@@ -63,6 +65,15 @@ export function Sheet({ artwork }: { artwork: Artwork }) {
     },
     [open],
   );
+
+  // In the Android app, Back closes the open sheet before it leaves the app.
+  useEffect(() => {
+    if (!inApp || !open) return;
+    const handle = NativeApp.addListener("backButton", () => setOpenAndArrow(false));
+    return () => {
+      void handle.then((h) => h.remove());
+    };
+  }, [open, setOpenAndArrow]);
 
   const onDown = (e: React.PointerEvent) => {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);

@@ -36,6 +36,74 @@ LOOKS = {
             "shoeL": ("#e9edf0", 4, 16), "shoeR": ("#e9edf0", 4, 16),
         },
     },
+    # A dancer with an afro, as she is: brown tube top, light denim mini skirt,
+    # cream heels.
+    "afro": {
+        "hair": "raw", "skirt": True, "shoes": 0.1, "reach": 0.55, "hands": True,
+        "layers": {
+            "armL": ("#8a4a35", 4, 26), "armR": ("#8a4a35", 4, 26),
+            "hair": ("#1a1414", 0, 30), "face": ("#8a4a35", 5, 22),
+            "top": ("#6e3a38", 4, 30),
+            "skirt": ("#a3bdd6", 4, 30),
+            "legL": ("#8a4a35", 4, 26), "legR": ("#8a4a35", 4, 26),
+            "shoeL": ("#ead7b7", 4, 16), "shoeR": ("#ead7b7", 4, 16),
+        },
+    },
+    # Her moves, dressed in a black leather tube top, maroon cargo trousers and
+    # black sneakers.
+    "leather": {
+        "hair": "raw", "baggy": True, "shoes": 0.24, "reach": 0.55, "hands": True,
+        "layers": {
+            "armL": ("#8d5a3c", 4, 26), "armR": ("#8d5a3c", 4, 26),
+            "hair": ("#1d1714", 0, 30), "face": ("#8d5a3c", 5, 22),
+            "top": ("#18181b", 4, 30),
+            "bottomL": ("#7d2338", 4, 30), "bottomR": ("#7d2338", 4, 30),
+            "shoeL": ("#18181c", 4, 18), "shoeR": ("#18181c", 4, 18),
+        },
+    },
+    # Her moves, in a white studded two-piece and white lace-up boots, with a
+    # long black ponytail.
+    "studs": {
+        "hair": "ponytail", "bikini": True, "boots": True, "reach": 0.55, "hands": True,
+        "layers": {
+            "armL": ("#a0663f", 4, 26), "armR": ("#a0663f", 4, 26),
+            "hair": ("#121012", 0, 30), "face": ("#a0663f", 5, 22),
+            "bikiniTop": ("#f2f0ea", 4, 24),
+            "midriff": ("#a0663f", 4, 30),
+            "bikiniBottom": ("#f2f0ea", 4, 24),
+            "bootL": ("#ece3d0", 4, 22), "bootR": ("#ece3d0", 4, 22),
+            "legL": ("#a0663f", 4, 26), "legR": ("#a0663f", 4, 26),
+        },
+    },
+    # Her moves, in a white balaclava, blue tee and shorts, white socks and
+    # black sneakers.
+    "balaclava": {
+        "hair": "none", "hood": True, "sleeves": "short", "tunic": 1.05, "shorts": True, "socks": True,
+        "shoes": 0.24, "reach": 0.55, "hands": True,
+        "layers": {
+            "sleeveL": ("#2a73c9", 4, 22), "sleeveR": ("#2a73c9", 4, 22),
+            "armL": ("#6e4532", 4, 26), "armR": ("#6e4532", 4, 26),
+            "face": ("#6e4532", 0, 18), "hood": ("#f1efe9", 4, 30),
+            "top": ("#2a73c9", 4, 30),
+            "bottomL": ("#1f56c2", 4, 24), "bottomR": ("#1f56c2", 4, 24),
+            "sockL": ("#f4f4f2", 4, 14), "sockR": ("#f4f4f2", 4, 14),
+            "shoeL": ("#15151a", 4, 18), "shoeR": ("#15151a", 4, 18),
+            "legL": ("#6e4532", 4, 26), "legR": ("#6e4532", 4, 26),
+        },
+    },
+    # Her moves, in a dark green work jacket and cargo trousers, cream boots,
+    # and shoulder-length locs.
+    "cargo": {
+        "hair": "locs", "sleeves": "long", "tunic": 1.15, "baggy": True, "shoes": 0.26, "reach": 0.55, "hands": True,
+        "layers": {
+            "sleeveL": ("#3f5a3a", 4, 24), "sleeveR": ("#3f5a3a", 4, 24),
+            "armL": ("#6b4330", 4, 20), "armR": ("#6b4330", 4, 20),
+            "face": ("#6b4330", 5, 22), "hair": ("#151213", 0, 32),
+            "top": ("#3f5a3a", 4, 32),
+            "shoeL": ("#e6dccb", 4, 18), "shoeR": ("#e6dccb", 4, 18),
+            "bottomL": ("#42603d", 4, 30), "bottomR": ("#42603d", 4, 30),
+        },
+    },
     # The dancer in the clip, as he is: red satin shirt open at the collar, red
     # trousers, black shoes, sunglasses and a grey beard.
     "satin": {
@@ -320,6 +388,130 @@ def parts_for(img, P):
                         apex + right * torso_w * 0.02, apex - right * torso_w * 0.02])
         cm = cv2.fillPoly(np.zeros((h, w), np.uint8), [tri.round().astype(np.int32)], 255)
         out["collar"] = cm
+    def along_seg(mask, a, b):
+        """Pixels of `mask`, with how far along a→b each lies (0 at a, 1 at b)."""
+        yy, xx = np.nonzero(mask)
+        pts = np.stack([xx, yy], 1).astype(float)
+        ab = b - a
+        return yy, xx, (pts - a) @ ab / max(ab @ ab, 1e-6)
+
+    def from_pixels(yy, xx, sel, k=7):
+        m = np.zeros((h, w), np.uint8)
+        m[yy[sel], xx[sel]] = 255
+        return soften(m, k)
+
+    # Hair drawn to a normal head's size, not the dancer's own (an afro):
+    # a cap over the crown, and a ponytail or shoulder-length locs.
+    if look["hair"] in ("ponytail", "locs", "none"):
+        out["hair"] = np.zeros((h, w), np.uint8)
+    if look["hair"] in ("ponytail", "locs") and face_box is not None:
+        x0, y0, x1, y1 = face_box
+        fw, fh = max(x1 - x0, 4), max(y1 - y0, 4)
+        cx = (x0 + x1) / 2
+        hm = np.zeros((h, w), np.uint8)
+        cv2.ellipse(hm, (int(cx), int(y0 + fh * 0.3)), (int(fw * 0.62), int(fh * 0.55)), 0, 180, 360, 255, -1)
+        if look["hair"] == "ponytail":
+            # Gathered at the back of the crown, falling past the shoulder.
+            cv2.line(hm, (int(cx + fw * 0.35), int(y0 + fh * 0.05)), (int(cx + fw * 0.7), int(sh[1] + torso_w * 0.15)),
+                     255, max(2, int(fw * 0.3)))
+        else:
+            # Locs: strands hanging from the crown to the shoulders, ends uneven.
+            drop = sh[1] + torso_w * 0.1
+            for k in range(9):
+                u = -1 + 2 * k / 8
+                top_pt = (int(cx + u * fw * 0.55), int(y0 + fh * 0.15))
+                end = (int(cx + u * fw * 0.85), int(drop - (k % 3) * fh * 0.12))
+                cv2.line(hm, top_pt, end, 255, max(2, int(fw * 0.2)))
+        out["hair"] = hm
+    # A balaclava: the whole head in knit, with an opening for the face.
+    if look.get("hood"):
+        head = cv2.bitwise_or(base["hair"], face_m)
+        cs_, _ = cv2.findContours(head, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        if cs_ and face_box is not None:
+            x0, y0, x1, y1 = face_box
+            fw = max(x1 - x0, 4)
+            # A head-sized hood, centred on the face: not the size of the afro under it.
+            centre = (int((x0 + x1) / 2), int((y0 + y1) / 2 - fw * 0.1))
+            hood = cv2.ellipse(np.zeros((h, w), np.uint8), centre, (int(fw * 0.72), int(fw * 0.9)), 0, 0, 360, 255, -1)
+            neck = np.array([[centre[0] - fw * 0.45, centre[1]], [centre[0] + fw * 0.45, centre[1]],
+                             [sh[0] + torso_w * 0.22, sh[1] + torso_w * 0.05], [sh[0] - torso_w * 0.22, sh[1] + torso_w * 0.05]], np.int32)
+            cv2.fillPoly(hood, [neck], 255)
+            out["hood"] = hood
+            eyes, mouth = (P[2] + P[5]) / 2, (P[9] + P[10]) / 2
+            span = max(np.linalg.norm(P[3] - P[6]), 4)
+            mid = (eyes + mouth) / 2
+            opening = cv2.ellipse(np.zeros((h, w), np.uint8), tuple(np.round(mid).astype(int)),
+                                  (int(span * 0.7), int(max(mouth[1] - eyes[1], 4) * 1.25)), 0, 0, 360, 255, -1)
+            out["face"] = cv2.bitwise_and(opening, hood)
+    # Sleeves over bare arms: to mid upper arm (a tee), or to the wrist (a jacket).
+    if look.get("sleeves"):
+        for s_, sh_, el_, wr_ in (("L", shL, elL, wrL), ("R", shR, elR, wrR)):
+            arm = cv2.bitwise_or(base["arm" + s_], base["sleeve" + s_])
+            if look["sleeves"] == "short":
+                yy, xx, t = along_seg(arm, sh_, el_)
+                cover = t < 0.6
+            else:
+                yy, xx, t = along_seg(arm, el_, wr_)
+                dist = np.linalg.norm(np.stack([xx, yy], 1) - wr_, axis=1)
+                cover = (t < 0.85) & (dist > torso_w * 0.2)
+            # Drawn along the arm's own joints, so a sleeve is whole even
+            # where the clip shows little of the arm.
+            line = np.zeros((h, w), np.uint8)
+            if look["sleeves"] == "short":
+                pts = [sh_, sh_ + (el_ - sh_) * 0.55]
+                width = torso_w * 0.36
+            else:
+                pts = [sh_, el_, el_ + (wr_ - el_) * 0.8]
+                width = torso_w * 0.3
+            cv2.polylines(line, [np.round(np.array(pts)).astype(np.int32)], False, 255, max(2, int(width)))
+            sleeve = cv2.bitwise_or(line, from_pixels(yy, xx, cover))
+            out["sleeve" + s_] = soften(sleeve)
+            rest = from_pixels(yy, xx, ~cover)
+            out["arm" + s_] = cv2.bitwise_and(rest, cv2.bitwise_not(cv2.erode(sleeve, np.ones((5, 5), np.uint8))))
+    # A tee or jacket worn loose: the top hangs past the waist, over the skirt.
+    if look.get("tunic"):
+        low = cv2.bitwise_or(base["bottomL"], base["bottomR"])
+        yy, xx, t = along_seg(low, sh, hip)
+        out["top"] = cv2.bitwise_or(out["top"], from_pixels(yy, xx, t < look["tunic"]))
+    # Shorts to the knee, over bare thigh; socks to mid-shin.
+    if look.get("shorts"):
+        for s_, hp_, kn_ in (("L", hpL, knL), ("R", hpR, knR)):
+            leg = cv2.bitwise_or(base["leg" + s_], base["bottom" + s_])
+            yy, xx, t = along_seg(leg, hp_, kn_)
+            out["bottom" + s_] = cv2.dilate(from_pixels(yy, xx, t < 0.95), np.ones((5, 5), np.uint8))
+            out["leg" + s_] = from_pixels(yy, xx, t >= 0.95)
+    if look.get("socks"):
+        for s_, kn_, an_ in (("L", knL, anL), ("R", knR, anR)):
+            yy, xx, t = along_seg(out["leg" + s_], kn_, an_)
+            out["sock" + s_] = from_pixels(yy, xx, t > 0.65, 5)
+            out["leg" + s_] = from_pixels(yy, xx, t <= 0.65, 5)
+    # Shoes drawn heel to toe from the pose, as thick as the look's shoe: thin
+    # for heels, chunky for sneakers and boots. Small shoes trace poorly.
+    if look.get("shoes"):
+        for s_, an_, heel, toe in (("L", anL, P[30], P[32]), ("R", anR, P[29], P[31])):
+            m = np.zeros((h, w), np.uint8)
+            width = max(2, int(torso_w * look["shoes"]))
+            pts = np.round(np.array([an_ + (heel - an_) * 0.5, heel, toe])).astype(np.int32)
+            cv2.polylines(m, [pts], False, 255, width)
+            out["shoe" + s_] = m
+    # A single skirt, not split down the middle by leg.
+    if look.get("skirt"):
+        both = cv2.bitwise_or(base["bottomL"], base["bottomR"])
+        out["skirt"] = soften(cv2.morphologyEx(both, cv2.MORPH_CLOSE, np.ones((11, 11), np.uint8)))
+    # A two-piece: bare torso and legs, a band across the chest, a brief at the hips.
+    if look.get("bikini"):
+        torso = cv2.bitwise_or(base["top"], base["midriff"])
+        yy, xx, t = along_seg(torso, sh, hip)
+        out["midriff"] = soften(cv2.bitwise_or(torso, from_pixels(yy, xx, t > -1)))
+        out["bikiniTop"] = from_pixels(yy, xx, (t > 0.12) & (t < 0.36))
+        low = cv2.bitwise_or(base["bottomL"], base["bottomR"])
+        knee = (knL + knR) / 2
+        yy, xx, t = along_seg(low, hip, knee)
+        out["bikiniBottom"] = from_pixels(yy, xx, t < 0.22)
+        for s_, hp_, kn_ in (("L", hpL, knL), ("R", hpR, knR)):
+            yy, xx, t = along_seg(base["bottom" + s_], hp_, kn_)
+            out["leg" + s_] = cv2.bitwise_or(out["leg" + s_], from_pixels(yy, xx, t >= 0.1))
+
     # Jersey stripes: bands running down the torso, clipped to the shirt.
     if look.get("stripes"):
         k = look["stripes"]
@@ -371,7 +563,7 @@ while True:
         frames[i] = img
     i += 1
 
-ANCHOR_JOINT = {"shades": 2, "beard": 0, "collar": 0, "armL": 12, "armR": 11, "sleeveL": 12, "sleeveR": 11, "legL": 24, "legR": 23,
+ANCHOR_JOINT = {"hood": 0, "skirt": 24, "bikiniTop": 12, "bikiniBottom": 24, "sockL": 28, "sockR": 27, "shades": 2, "beard": 0, "collar": 0, "armL": 12, "armR": 11, "sleeveL": 12, "sleeveR": 11, "legL": 24, "legR": 23,
                 "bottomL": 24, "bottomR": 23, "shoeL": 28, "shoeR": 27, "bootL": 28, "bootR": 27}
 traced = {p: [] for p in LAYERS}
 heights, centres = [], []

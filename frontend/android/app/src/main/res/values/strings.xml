@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Atapp</string>
+    <string name="title_activity_main">Atapp</string>
+    <string name="package_name">com.ethichadebe.atapp</string>
+    <string name="custom_url_scheme">com.ethichadebe.atapp</string>
+    <string name="notification_title">Today\'s art is here</string>
+    <string name="notification_channel">Art of the day</string>
+    <string name="notification_channel_description">A morning note with the day\'s artwork.</string>
+    <string name="widget_description">Today\'s art of the day</string>
+    <string name="widget_loading">Today\'s art</string>
+</resources>

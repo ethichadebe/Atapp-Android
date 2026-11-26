@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { pickDancer, showDancerIcon } from "./dancers";
+import { setLauncherDancer } from "../native";
 import { Logo } from "./Logo";
 
 // The Android app's opening screen (SplashScreenActivity and
@@ -41,7 +42,10 @@ export function Splash({ ready, onDone }: { ready: boolean; onDone: () => void }
 
   // The tab (and, for anyone adding the site to their home screen, the app
   // icon) shows the face of whoever is dancing.
-  useEffect(() => showDancerIcon(dancer), [dancer]);
+  useEffect(() => {
+    showDancerIcon(dancer);
+    setLauncherDancer(dancer.id);
+  }, [dancer]);
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {

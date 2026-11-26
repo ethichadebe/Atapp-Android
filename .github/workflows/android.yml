@@ -1,0 +1,77 @@
+name: Android
+
+# Pull requests: test the Android app and build a debug APK.
+# Run by hand (Actions → Android → Run workflow): build the signed bundle to
+# upload to Google Play. That needs, in Settings → Secrets and variables →
+# Actions:
+#   variable ATAPP_API_BASE           the site's address, e.g. https://example.com
+#   secret   ANDROID_KEYSTORE_BASE64  the upload keystore, base64-encoded
+#   secret   ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+# See frontend/android/README.md.
+
+on:
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "tools/android/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm test -w frontend
+      - run: npm run build -w frontend
+      - run: npx cap sync android
+        working-directory: frontend
+
+      - name: Test and build the debug app
+        working-directory: frontend/android
+        env:
+          ATAPP_API_BASE: ${{ vars.ATAPP_API_BASE }}
+        run: ./gradlew testDebugUnitTest assembleDebug
+
+      - name: Build the signed Play bundle
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: frontend/android
+        env:
+          ATAPP_API_BASE: ${{ vars.ATAPP_API_BASE }}
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ATAPP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ATAPP_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ATAPP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ATAPP_API_BASE" ] || [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Set the ATAPP_API_BASE variable and the ANDROID_* secrets first (frontend/android/README.md)."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          # Each run's version code is higher than the last; the native app's
+          # last Play release was 6.
+          ATAPP_VERSION_CODE=$((GITHUB_RUN_NUMBER + 10)) ATAPP_KEYSTORE="$RUNNER_TEMP/upload.jks" ./gradlew bundleRelease
+          rm -f "$RUNNER_TEMP/upload.jks"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: atapp-debug-apk
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          name: atapp-play-bundle
+          path: frontend/android/app/build/outputs/bundle/release/app-release.aab

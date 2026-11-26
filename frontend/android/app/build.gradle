@@ -1,0 +1,80 @@
+apply plugin: 'com.android.application'
+
+// Values for a release come from the environment (CI secrets), never from
+// this repository: the server address and the signing key.
+//   ATAPP_API_BASE         the site's address, e.g. https://example.com
+//   ATAPP_VERSION_CODE     a number higher than the last Play release
+//   ATAPP_KEYSTORE, ATAPP_KEYSTORE_PASSWORD, ATAPP_KEY_ALIAS, ATAPP_KEY_PASSWORD
+def env = { String name -> System.getenv(name) ?: (project.findProperty(name) ?: "") }
+
+android {
+    namespace = "com.ethichadebe.atapp"
+    buildFeatures {
+        buildConfig = true
+    }
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.ethichadebe.atapp"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        // The Play listing's last native release was versionCode 6.
+        versionCode((env("ATAPP_VERSION_CODE") ?: "7") as Integer)
+        versionName "2.0"
+        buildConfigField "String", "API_BASE", "\"${env("ATAPP_API_BASE")}\""
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        release {
+            if (env("ATAPP_KEYSTORE")) {
+                storeFile file(env("ATAPP_KEYSTORE"))
+                storePassword env("ATAPP_KEYSTORE_PASSWORD")
+                keyAlias env("ATAPP_KEY_ALIAS")
+                keyPassword env("ATAPP_KEY_PASSWORD")
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (env("ATAPP_KEYSTORE")) signingConfig signingConfigs.release
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    implementation "androidx.work:work-runtime:2.11.2"
+    testImplementation "junit:junit:$junitVersion"
+    // Android's own org.json is a stub on the JVM; tests use the real one.
+    testImplementation "org.json:json:20250517"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

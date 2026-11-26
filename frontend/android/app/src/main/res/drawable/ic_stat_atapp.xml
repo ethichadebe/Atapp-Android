@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Atapp logo (frontend/src/splash/Logo.tsx) in one colour, for the status bar. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="56" android:viewportHeight="56">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M0,0h56v14H0z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M21.5,15h13v8h-13z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M0,21h12.5v20h9V23h13v18h9V21H56v35H0z" />
+</vector>
