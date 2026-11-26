@@ -5,7 +5,7 @@ The opening screen plays one dancer at random per visit
 Android dance's style: flat-colour shapes per body part, about 10 key poses a
 second, morphed at 60 fps, in a 500×800 frame.
 
-- `snoop` — the Android app's original (`app/src/main/res/raw/snoop_dance.json`).
+- `snoop` — the original native app's dance (its `res/raw/snoop_dance.json`, in this repository's history).
 - `zep` — traced from a 3-second Zep dance clip with `trace.py`.
 - `chad` and `milan` — two routines by one dancer, traced with `trace_look.py`:
   `chad` drawn as he is, `milan` dressed in a striped jersey and baggy trousers.

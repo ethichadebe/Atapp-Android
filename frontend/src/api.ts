@@ -1,3 +1,5 @@
+import { apiBase, inApp, saveForOffline, savedSet } from "./native";
+
 // The backend's response shapes (backend/src/artwork.ts, backend/src/app.ts).
 
 export interface Artwork {
@@ -28,6 +30,8 @@ export interface Artwork {
    * it drew on. Null until written (or when research is off).
    */
   story?: { text: string; sources: { title: string; url: string }[] } | null;
+  /** In the Android app: the picture saved on the phone, for offline use. */
+  localImage?: string;
 }
 
 export interface DailySet {
@@ -35,9 +39,31 @@ export interface DailySet {
   artworks: Artwork[];
 }
 
-/** Today's 10, the same for everyone; the first is the art of the day. */
+/**
+ * Today's 10, the same for everyone; the first is the art of the day.
+ *
+ * In the Android app, the set and its pictures are also kept on the phone, and
+ * the last one kept is shown when there is no connection.
+ */
 export async function fetchDaily(signal?: AbortSignal): Promise<DailySet> {
-  const res = await fetch("/api/artworks/daily", { signal });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return (await res.json()) as DailySet;
+  try {
+    const res = await fetch(`${await apiBase()}/api/artworks/daily`, { signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const set = (await res.json()) as DailySet;
+    if (inApp) {
+      // Keep the saved copy's local pictures until the new ones are in.
+      const saved = await savedSet();
+      if (saved?.date === set.date) {
+        const local = new Map(saved.artworks.map((a) => [a.objectId, a.localImage]));
+        set.artworks = set.artworks.map((a) => ({ ...a, localImage: local.get(a.objectId) }));
+      }
+      void saveForOffline(set).catch(() => {});
+    }
+    return set;
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    const saved = await savedSet();
+    if (saved) return saved;
+    throw err;
+  }
 }

@@ -4,7 +4,8 @@
 
 STILL.png is a frame rendered at 4x by still.mjs; HAIR_HEX is the colour of the
 shape to frame (the hair, e.g. 1d1726). Writes OUT_PREFIX-32.png (browser tab)
-and OUT_PREFIX-180.png (home screen). WIDTH is the icon's width in hair widths
+and OUT_PREFIX-180.png (home screen), and OUT_PREFIX-512.png for the Android
+app's launcher icon. WIDTH is the icon's width in hair widths
 (1.55 suits big hair; short hair needs ~2.6); TOP is how far down the frame the
 hair can be found (0.35; lower it if clothing shares the hair's colour).
 """
@@ -23,5 +24,5 @@ x0, x1, y0 = xs.min(), xs.max(), ys.min()
 side = int((x1 - x0) * width)  # the same framing as icon-512.png
 cx, top = (x0 + x1) // 2, max(0, int(y0 - side * 0.11))
 crop = im[top:top + side, cx - side // 2: cx - side // 2 + side]
-for n in (32, 180):
+for n in (32, 180, 512):
     cv2.imwrite(f"{prefix}-{n}.png", cv2.resize(crop, (n, n), interpolation=cv2.INTER_AREA))

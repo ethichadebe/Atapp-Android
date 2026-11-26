@@ -9,6 +9,10 @@
 }
 
 :root {
+  /* The phone's status and navigation bars. In the Android app, Capacitor
+     measures them into --safe-area-inset-*; in a browser, env() does. */
+  --inset-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --inset-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --bg: #4d3d38;
   --text: #e4dc8c;
   --font: "Lilita One", system-ui, sans-serif;
@@ -86,7 +90,7 @@ a {
 .indicator {
   position: absolute;
   z-index: 2;
-  top: calc(env(safe-area-inset-top) + 30px);
+  top: calc(var(--inset-top) + 30px);
   left: 50%;
   height: 8px;
   transform: translateX(-50%);
@@ -179,6 +183,11 @@ a {
   touch-action: none;
 }
 
+/* Open, the sheet fills the screen: keep its arrow clear of the status bar. */
+.sheet-head[aria-expanded="true"] {
+  padding-top: var(--inset-top);
+}
+
 .sheet-arrow {
   display: block;
   width: 24px;
@@ -230,7 +239,7 @@ a {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  margin: 10px 10px calc(env(safe-area-inset-bottom) + 10px);
+  margin: 10px 10px calc(var(--inset-bottom) + 10px);
   text-align: center;
 }
 
@@ -351,7 +360,7 @@ a {
 
 .splash-logo {
   position: absolute;
-  bottom: calc(env(safe-area-inset-bottom) + 20px);
+  bottom: calc(var(--inset-bottom) + 20px);
   left: 50%;
   transform: translateX(-50%);
 }

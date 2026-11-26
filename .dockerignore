@@ -1,17 +1,15 @@
 # The build context is the repo root. Only backend/, frontend/ and the root
-# package files are needed; the Android app and its archive stay out.
+# package files are needed; the Android app (frontend/android), the tools and
+# the old app's archive stay out.
 **/node_modules
 **/dist
 .git
 .github
 .idea
-.gradle
-app
-gradle
+**/.gradle
+frontend/android
+tools
 Atapp.zip
-*.gradle
-gradlew
-gradlew.bat
 .env
 .env.*
 !.env.example
